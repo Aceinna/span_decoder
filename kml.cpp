@@ -45,7 +45,7 @@ void print_kml_heder(FILE *fKML)
 	return;
 }
 
-void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, double time)
+void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, double time, float heading)
 {
 	int day = 0;
 	int hh = 0;
@@ -75,9 +75,17 @@ void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, d
 		{
 			fprintf(fKML, "<styleUrl>#spp</styleUrl>\n");
 		}
+		fprintf(fKML, "<Style>\n");
+		fprintf(fKML, "<IconStyle>\n");
+		fprintf(fKML, "<heading>%f</heading>\n", heading);
+		fprintf(fKML, "</IconStyle>\n");
+		fprintf(fKML, "</Style>\n");
 		fprintf(fKML, "<ExtendedData>\n");
 		fprintf(fKML, "<Data name=\"time\">\n");
 		fprintf(fKML, "<value>%02i:%02i:%5.2f</value>\n", hh, mm, time);
+		fprintf(fKML, "</Data>\n");
+		fprintf(fKML, "<Data name=\"heading\">\n");
+		fprintf(fKML, "<value>%.2f</value>\n", heading);
 		fprintf(fKML, "</Data>\n");
 		fprintf(fKML, "</ExtendedData>\n");
 		fprintf(fKML, "<Point>\n");

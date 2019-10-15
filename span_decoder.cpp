@@ -53,18 +53,22 @@ void decode_span(const char* fname)
 			else break;
 		}
 
-		if (strstr(val[0], "#BESTPOSA") != NULL)
+		if (strstr(val[0], "#BESTGNSSPOSA") != NULL)
 		{
 			continue;
 		}
 		if (strstr(val[0], "#INSPVAXA") != NULL)
 		{
 			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) };
-			int solType = 5;
-			if (strstr(val[10], "INS_RTKFIXED") != NULL)
-				solType = 4;
+
+			int solType = 1;
+			if (strstr(val[10], "INS_RTKFLOAT") != NULL) solType = 5;
+			else if (strstr(val[10], "INS_RTKFIXED") != NULL) solType = 4;
+
 			double time = atof(val[6]);
-			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time);
+			float heading = atof(val[20]);
+
+			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time, heading);
 			continue;
 		}
 	}
@@ -81,7 +85,7 @@ void decode_span(const char* fname)
 
 int main()
 {
-	decode_span("C:\\aceinna\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
+	decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
