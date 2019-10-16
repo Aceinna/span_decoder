@@ -5,6 +5,9 @@
 
 #include "kml.h"
 
+#include "minizipdll.h"
+#pragma comment(lib,"MINIZIPDLL.lib") 
+
 #define MAXFIELD 100
 
 typedef enum INS_STATUS
@@ -20,13 +23,13 @@ typedef struct
 {
 	int week;
 	double gps_tow;
-	double lat;
+	double lat; // deg
 	double lon;
 	float hgt;
-	float vn;
+	float vn; // m/s
 	float ve;
 	float vu;
-	float roll;
+	float roll; // deg
 	float pitch;
 	float azimuth;
 } ins_pva;
@@ -57,6 +60,7 @@ void decode_span(const char* fname)
 
 	char fileName[255] = { 0 };
 	char outfilename[255] = { 0 };
+	char out_kml_fpath[255] = { 0 };
 
 	fdat = fopen(fname, "r"); if (fdat == NULL) return;
 
@@ -67,7 +71,7 @@ void decode_span(const char* fname)
 	sprintf(outfilename, "%s.gga", fileName); fgga = fopen(outfilename, "w");
 	sprintf(outfilename, "%s.gps", fileName); fgps = fopen(outfilename, "w");
 	sprintf(outfilename, "%s.imu", fileName); fimu = fopen(outfilename, "w");
-	sprintf(outfilename, "%s.kml", fileName); fkml = fopen(outfilename, "w");
+	sprintf(out_kml_fpath, "%s.kml", fileName); fkml = fopen(out_kml_fpath, "w");
 
 	if (fkml!=NULL) print_kml_heder(fkml);
 
@@ -108,10 +112,21 @@ void decode_span(const char* fname)
 	if (fkml != NULL) print_kml_eof(fkml);
 
 	if (fdat != NULL) fclose(fdat);
-	if (fkml != NULL) fclose(fkml);
 	if (fgga != NULL) fclose(fgga);
 	if (fgps != NULL) fclose(fgps);
 	if (fimu != NULL) fclose(fimu);
+	if (fkml != NULL) {
+		fclose(fkml);
+
+		/* zip kml to get kmz */
+		char* paras[3] = { 0 };
+		strcpy(paras[0], "./minizipdll");
+		sprintf(paras[1], "%s.kmz", fileName);
+		strcpy(paras[2], out_kml_fpath);
+
+		minizip(3, paras);
+	}
+
 	return;
 }
 
@@ -221,8 +236,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 int main()
 {
 	bool res;
-	//decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
-	res = diff_with_span("C:\\Users\\da\\Documents\\289\\span\\novatel_FLX6-2019_10_15_10_48_09.ASC","C:\\Users\\da\\Documents\\289\\span\\novatel_CPT7-2019_10_15_10_48_15.ASC");
+	decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
+	//res = diff_with_span("C:\\Users\\da\\Documents\\289\\span\\novatel_FLX6-2019_10_15_10_48_09.ASC","C:\\Users\\da\\Documents\\289\\span\\novatel_CPT7-2019_10_15_10_48_15.ASC");
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
