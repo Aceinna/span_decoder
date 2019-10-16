@@ -7,6 +7,46 @@
 
 #define MAXFIELD 100
 
+typedef enum INS_STATUS
+{
+	INS_INACTIVE = 0,
+	DETERMINING_ORIENTATION,
+	INS_ALIGNING,
+	INS_ALIGNMENT_COMPLETE,
+	INS_SOLUTION_GOOD
+};
+
+typedef struct
+{
+	int week;
+	double gps_tow;
+	double lat;
+	double lon;
+	float hgt;
+	float vn;
+	float ve;
+	float vu;
+	float roll;
+	float pitch;
+	float azimuth;
+} ins_pva;
+
+
+static void parse_fields(char* const buffer, char** val)
+{
+	char* p, * q;
+	int n = 0;
+
+	/* parse fields */
+	for (p = buffer; *p && n < MAXFIELD; p = q + 1) {
+		if ((q = strchr(p, ',')) || (q = strchr(p, '*'))) {
+			val[n++] = p; *q = '\0';
+		}
+		else break;
+	}
+
+}
+
 void decode_span(const char* fname)
 {
 	FILE* fdat = NULL;
@@ -43,15 +83,7 @@ void decode_span(const char* fname)
 		fgets(buffer, sizeof(buffer), fdat);
 		if (strlen(buffer) <= 0) continue;
 
-		int n = 0;
-
-		/* parse fields */
-		for (p = buffer; *p && n < MAXFIELD; p = q + 1) {
-			if ((q = strchr(p, ',')) || (q = strchr(p, '*'))) {
-				val[n++] = p; *q = '\0';
-			}
-			else break;
-		}
+		parse_fields(buffer, val);
 
 		if (strstr(val[0], "#BESTGNSSPOSA") != NULL)
 		{
@@ -83,9 +115,114 @@ void decode_span(const char* fname)
 	return;
 }
 
+
+/* use SPAN CPT7 solutio as reference */
+bool diff_with_span(const char *fname_sol, const char *fname_span)
+{
+	FILE* fpsol = NULL, * fpspan = NULL, *fpdiff = NULL;
+
+	char fileName[255] = { 0 };
+	char outfilename[255] = { 0 };
+	char buffer[1024] = { 0 };
+
+	fpsol = fopen(fname_sol, "r");
+	fpspan = fopen(fname_span, "r");
+
+	if (fpsol == NULL || fpspan == NULL) return false;
+
+	strncpy(fileName, fname_sol, strlen(fname_sol));
+	char* result1 = strrchr(fileName, '.');
+	if (result1 != NULL) result1[0] = '\0';
+
+	sprintf(outfilename, "%s.diff", fileName); 
+	fpdiff = fopen(outfilename, "w");
+
+	char* val[MAXFIELD];
+	//char* valspan[MAXFIELD];
+	double gpstow_sol= 0.0, gpstow_span = 0.0;
+	ins_pva sol_pva = { 0 }, span_pva = { 0 };
+
+	int idxpos = 0, idxvel = 0, idxatt = 0;
+
+	while (!feof(fpsol))
+	{
+		memset(buffer, 0, sizeof(buffer));
+		//memset(val, 0, sizeof(val));*/
+
+		fgets(buffer, sizeof(buffer), fpsol);
+		if (strlen(buffer) <= 0) continue; 
+
+		parse_fields(buffer, val);
+
+		if (!strstr(val[13], "INS_ALIGNMENT_COMPLETE") && !strstr(val[13], "INS_SOLUTION_GOOD")) continue;
+		gpstow_sol = atof(val[3]);
+
+		idxpos = 4, idxvel = 7, idxatt = 10;
+		sol_pva.gps_tow = gpstow_sol;
+		sol_pva.lat = atof(val[idxpos]); sol_pva.lon = atof(val[idxpos + 1]); sol_pva.hgt = atof(val[idxpos + 2]);
+		sol_pva.vn = atof(val[idxvel]); sol_pva.ve = atof(val[idxvel + 1]); sol_pva.vu = atof(val[idxvel + 2]);
+		sol_pva.roll = atof(val[idxatt]); sol_pva.pitch = atof(val[idxatt + 1]); sol_pva.azimuth = atof(val[idxatt + 2]);
+
+
+		if (gpstow_span < gpstow_sol) {
+
+			do {
+				memset(buffer, 0, sizeof(buffer));
+				//memset(val, 0, sizeof(val));*/
+
+				fgets(buffer, sizeof(buffer), fpspan);
+				if (strlen(buffer) <= 0) continue;
+
+				parse_fields(buffer, val);
+
+				if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
+				gpstow_span = atof(val[6]);
+
+				idxpos = 11; idxvel = 15; idxatt = 18;
+				span_pva.gps_tow = gpstow_span;
+				span_pva.lat = atof(val[idxpos]); span_pva.lon = atof(val[idxpos + 1]); span_pva.hgt = atof(val[idxpos + 2]) + atof(val[idxpos + 3]);
+				span_pva.vn = atof(val[idxvel]); span_pva.ve = atof(val[idxvel + 1]); span_pva.vu = atof(val[idxvel + 2]);
+				span_pva.roll = atof(val[idxatt]); span_pva.pitch = atof(val[idxatt + 1]); span_pva.azimuth = atof(val[idxatt + 2]);
+
+				if (gpstow_span >= gpstow_sol) {
+					break;
+				}
+
+			} while (!feof(fpspan));
+		}
+		
+		if (fabs(gpstow_span - gpstow_sol) < 0.005) {
+			printf("sol time: %f, span time: %f\n", gpstow_sol, gpstow_span);
+
+			fprintf(fpdiff, "%.3f,%lf,%lf,%f,%f,%f,%f,%f,%f,%f,", gpstow_sol,
+				sol_pva.lat, sol_pva.lon, sol_pva.hgt,
+				sol_pva.vn, sol_pva.ve, sol_pva.vu,
+				sol_pva.roll, sol_pva.pitch, sol_pva.azimuth);
+
+			fprintf(fpdiff, "%lf,%lf,%f,%f,%f,%f,%f,%f,%f,",
+				span_pva.lat, span_pva.lon, span_pva.hgt,
+				span_pva.vn, span_pva.ve, span_pva.vu,
+				span_pva.roll, span_pva.pitch, span_pva.azimuth);
+
+			fprintf(fpdiff, "%.9f,%.9f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+				sol_pva.lat - span_pva.lat, sol_pva.lon - span_pva.lon, sol_pva.hgt- span_pva.hgt,
+				sol_pva.vn - span_pva.vn, sol_pva.ve - span_pva.ve, sol_pva.vu - span_pva.vu,
+				sol_pva.roll - span_pva.roll, sol_pva.pitch - span_pva.pitch, sol_pva.azimuth - span_pva.azimuth);
+		}
+	}
+
+	if (fpsol != NULL) fclose(fpsol);
+	if (fpspan != NULL) fclose(fpspan);
+	if (fpdiff != NULL) fclose(fpdiff);
+
+	return true;
+}
+
 int main()
 {
-	decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
+	bool res;
+	//decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
+	res = diff_with_span("C:\\Users\\da\\Documents\\289\\span\\novatel_FLX6-2019_10_15_10_48_09.ASC","C:\\Users\\da\\Documents\\289\\span\\novatel_CPT7-2019_10_15_10_48_15.ASC");
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
