@@ -6,7 +6,7 @@
 #include "kml.h"
 
 #include "minizipdll.h"
-#pragma comment(lib,"MINIZIPDLL.lib") 
+#pragma comment(lib,"MINIZIPDLL.lib")
 
 #define MAXFIELD 100
 
@@ -119,7 +119,10 @@ void decode_span(const char* fname)
 		fclose(fkml);
 
 		/* zip kml to get kmz */
-		char* paras[3] = { 0 };
+		char** paras = new char* [3];
+		for (int i = 0; i < 3; i++) {
+			paras[i] = new char[255];
+		}
 		strcpy(paras[0], "./minizipdll");
 		sprintf(paras[1], "%s.kmz", fileName);
 		strcpy(paras[2], out_kml_fpath);
@@ -169,12 +172,14 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 		parse_fields(buffer, val);
 
-		if (!strstr(val[13], "INS_ALIGNMENT_COMPLETE") && !strstr(val[13], "INS_SOLUTION_GOOD")) continue;
-		gpstow_sol = atof(val[3]);
+		if (!strstr(val[0], "#INSPVAXA")) continue;
 
-		idxpos = 4, idxvel = 7, idxatt = 10;
+		if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
+		gpstow_sol = atof(val[6]);
+
+		idxpos = 11, idxvel = 15, idxatt = 18;
 		sol_pva.gps_tow = gpstow_sol;
-		sol_pva.lat = atof(val[idxpos]); sol_pva.lon = atof(val[idxpos + 1]); sol_pva.hgt = atof(val[idxpos + 2]);
+		sol_pva.lat = atof(val[idxpos]); sol_pva.lon = atof(val[idxpos + 1]); sol_pva.hgt = atof(val[idxpos + 2]) + atof(val[idxpos + 3]);
 		sol_pva.vn = atof(val[idxvel]); sol_pva.ve = atof(val[idxvel + 1]); sol_pva.vu = atof(val[idxvel + 2]);
 		sol_pva.roll = atof(val[idxatt]); sol_pva.pitch = atof(val[idxatt + 1]); sol_pva.azimuth = atof(val[idxatt + 2]);
 
@@ -236,8 +241,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 int main()
 {
 	bool res;
-	decode_span("C:\\Users\\da\\Documents\\288\\span\\novatel_CPT7-2019_10_14_13_46_37.ASC");
-	//res = diff_with_span("C:\\Users\\da\\Documents\\289\\span\\novatel_FLX6-2019_10_15_10_48_09.ASC","C:\\Users\\da\\Documents\\289\\span\\novatel_CPT7-2019_10_15_10_48_15.ASC");
+	decode_span("C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_CPT7-2019_10_16_14_00_36.ASC");
+	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_FLX6-2019_10_16_14_01_18.ASC","C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_CPT7-2019_10_16_14_00_36.ASC");
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
