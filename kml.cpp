@@ -16,19 +16,37 @@ void print_kml_heder(FILE *fKML)
 		// fprintf(fKML, "<coordinates>\n"); 
 		fprintf(fKML, "<Style id=\"spp\">\n");
 		fprintf(fKML, "<IconStyle>\n");
+		fprintf(fKML, "<color>ff0000ff</color>\n");
+		fprintf(fKML, "<scale>0.300</scale>\n");
+		fprintf(fKML, "<Icon>\n");
+		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/track.png</href>\n");
+		fprintf(fKML, "</Icon>\n");
+		fprintf(fKML, "</IconStyle>\n");
+		fprintf(fKML, "</Style>\n");
+		fprintf(fKML, "<Style id=\"rtd\">\n");
+		fprintf(fKML, "<IconStyle>\n");
 		fprintf(fKML, "<color>ffff00ff</color>\n");
 		fprintf(fKML, "<scale>0.300</scale>\n");
 		fprintf(fKML, "<Icon>\n");
-		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>\n");
+		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/track.png</href>\n");
+		fprintf(fKML, "</Icon>\n");
+		fprintf(fKML, "</IconStyle>\n");
+		fprintf(fKML, "</Style>\n");
+		fprintf(fKML, "<Style id=\"udr\">\n");
+		fprintf(fKML, "<IconStyle>\n");
+		fprintf(fKML, "<color>50FF78F0</color>\n");
+		fprintf(fKML, "<scale>0.300</scale>\n");
+		fprintf(fKML, "<Icon>\n");
+		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/track.png</href>\n");
 		fprintf(fKML, "</Icon>\n");
 		fprintf(fKML, "</IconStyle>\n");
 		fprintf(fKML, "</Style>\n");
 		fprintf(fKML, "<Style id=\"fix\">\n");
 		fprintf(fKML, "<IconStyle>\n");
-		fprintf(fKML, "<color>ff008800</color>\n");
+		fprintf(fKML, "<color>ff00ff00</color>\n");
 		fprintf(fKML, "<scale>0.300</scale>\n");
 		fprintf(fKML, "<Icon>\n");
-		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>\n");
+		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/track.png</href>\n");
 		fprintf(fKML, "</Icon>\n");
 		fprintf(fKML, "</IconStyle>\n");
 		fprintf(fKML, "</Style>\n");
@@ -37,7 +55,7 @@ void print_kml_heder(FILE *fKML)
 		fprintf(fKML, "<color>ff00aaff</color>\n");
 		fprintf(fKML, "<scale>0.300</scale>\n");
 		fprintf(fKML, "<Icon>\n");
-		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>\n");
+		fprintf(fKML, "<href>http://maps.google.com/mapfiles/kml/shapes/track.png</href>\n");
 		fprintf(fKML, "</Icon>\n");
 		fprintf(fKML, "</IconStyle>\n");
 		fprintf(fKML, "</Style>\n");
@@ -45,7 +63,8 @@ void print_kml_heder(FILE *fKML)
 	return;
 }
 
-void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, double time, float heading)
+void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, double time, float heading,
+	char *sol_status)
 {
 	int day = 0;
 	int hh = 0;
@@ -59,21 +78,20 @@ void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, d
 		mm = (int)floor(time / 60);
 		time -= mm * 60;
 		fprintf(fKML, "<Placemark>\n");
-		if (solType == 1)
-		{
+		if (solType == 1) {
 			fprintf(fKML, "<styleUrl>#spp</styleUrl>\n");
 		}
-		else if (solType == 4)
-		{
+		else if (solType == 4) {
 			fprintf(fKML, "<styleUrl>#fix</styleUrl>\n");
 		}
-		else if (solType == 5)
-		{
+		else if (solType == 5) {
 			fprintf(fKML, "<styleUrl>#flt</styleUrl>\n");
 		}
-		else
-		{
-			fprintf(fKML, "<styleUrl>#spp</styleUrl>\n");
+		else if (solType == 2) {
+			fprintf(fKML, "<styleUrl>#rtd</styleUrl>\n");
+		}
+		else if (solType == 3) {
+			fprintf(fKML, "<styleUrl>#udr</styleUrl>\n");
 		}
 		fprintf(fKML, "<Style>\n");
 		fprintf(fKML, "<IconStyle>\n");
@@ -86,6 +104,9 @@ void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, d
 		fprintf(fKML, "</Data>\n");
 		fprintf(fKML, "<Data name=\"heading\">\n");
 		fprintf(fKML, "<value>%.2f</value>\n", heading);
+		fprintf(fKML, "</Data>\n");
+		fprintf(fKML, "<Data name=\"sol_status\">\n");
+		fprintf(fKML, "<value>%s</value>\n", sol_status);
 		fprintf(fKML, "</Data>\n");
 		fprintf(fKML, "</ExtendedData>\n");
 		fprintf(fKML, "<Point>\n");

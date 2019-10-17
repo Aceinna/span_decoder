@@ -26,5 +26,8 @@
     <ClInclude Include="kml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="minizipdll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

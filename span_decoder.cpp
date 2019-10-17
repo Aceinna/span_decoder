@@ -78,7 +78,7 @@ void decode_span(const char* fname)
 	int type = 0;
 	int wn = 0;
 
-	char buffer[1024] = { 0 };
+	char buffer[1024] = { 0 }, sol_status[56] = {0};
 
 	char* p, * q, * val[MAXFIELD];
 
@@ -95,16 +95,32 @@ void decode_span(const char* fname)
 		}
 		if (strstr(val[0], "#INSPVAXA") != NULL)
 		{
-			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) };
+			//if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
 
-			int solType = 1;
-			if (strstr(val[10], "INS_RTKFLOAT") != NULL) solType = 5;
+			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) };
+			if (blh[0] * blh[1] * blh[2] == 0.0) continue;
+
+			strcpy(sol_status, strchr(val[9], ';')+1);
+
+			int solType = -1;
+			if (strstr(val[10], "INS_PSRSP") != NULL) solType = 1;
+			else if (strstr(val[10], "INS_PSRDIFF") != NULL) solType = 2;
+			else if (strstr(val[10], "PSRDIFF") != NULL) solType = 2;
+			else if (strstr(val[10], "PROPAGATED") != NULL) solType = 3;
+			else if (strstr(val[10], "INS_RTKFLOAT") != NULL) solType = 5;
 			else if (strstr(val[10], "INS_RTKFIXED") != NULL) solType = 4;
+			else {
+				solType = 1;
+				printf("not supported\n");
+			}
+			strcpy(sol_status+strlen(sol_status), ",");
+			strcpy(sol_status+strlen(sol_status), val[10]);
 
 			double time = atof(val[6]);
+			printf("GPS TOW: %f\n", time);
 			float heading = atof(val[20]);
 
-			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time, heading);
+			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time, heading, sol_status);
 			continue;
 		}
 	}
@@ -241,8 +257,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 int main()
 {
 	bool res;
-	decode_span("C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_CPT7-2019_10_16_14_00_36.ASC");
-	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_FLX6-2019_10_16_14_01_18.ASC","C:\\Users\\da\\Documents\\290\\span\\turn_test\\novatel_CPT7-2019_10_16_14_00_36.ASC");
+	decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
+	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
