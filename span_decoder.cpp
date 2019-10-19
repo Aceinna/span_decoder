@@ -10,6 +10,10 @@
 
 #define MAXFIELD 100
 
+#define P2_33       1.164153218269348E-10 /* 2^-33 */
+#define P2_29       1.862645149230957E-09 /* 2^-29 */
+
+
 typedef enum INS_STATUS
 {
 	INS_INACTIVE = 0,
@@ -42,7 +46,7 @@ static void parse_fields(char* const buffer, char** val)
 
 	/* parse fields */
 	for (p = buffer; *p && n < MAXFIELD; p = q + 1) {
-		if ((q = strchr(p, ',')) || (q = strchr(p, '*'))) {
+		if ((q = strchr(p, ',')) || (q = strchr(p, '*')) || (q = strchr(p, ';'))) {
 			val[n++] = p; *q = '\0';
 		}
 		else break;
@@ -64,7 +68,7 @@ void decode_span(const char* fname)
 
 	fdat = fopen(fname, "r"); if (fdat == NULL) return;
 
-	strncpy(fileName, fname, strlen(fname));
+	strcpy(fileName, fname);
 	char* result1 = strrchr(fileName, '.');
 	if (result1 != NULL) result1[0] = '\0';
 
@@ -91,6 +95,38 @@ void decode_span(const char* fname)
 
 		if (strstr(val[0], "#BESTGNSSPOSA") != NULL)
 		{
+			/*
+#BESTGNSSPOSA,SPECIAL,0,45.0,COARSESTEERING,2075,507495.200,00400000,bede,14392;SOL_COMPUTED,SINGLE,37.38509346056,-122.09022710468,29.3987,-32.3000,WGS84,4.4743,3.1986,5.9788,"",0.000,0.000,5,5,5,0,00,02,00,01*44f57d2d
+			*/
+			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13])+ atof(val[14]) };
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			double rms[3] = { atof(val[16]), atof(val[17]), atof(val[18]) };
+			int type = 0;
+			if (strstr(val[11], "SINGLE") != NULL) type = 1;
+			else if (strstr(val[11], "NARROW_INT") != NULL) type = 4;
+			else if (strstr(val[11], "NARROW_FLOAT") != NULL) type = 5;
+			else if (strstr(val[11], "PSRDIFF") != NULL) type = 2;
+			if (fgps != NULL) fprintf(fgps, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
+			continue;
+		}
+		if (strstr(val[0], "#BESTGNSSVELA") != NULL)
+		{
+			/*
+#BESTGNSSVELA,SPECIAL,0,45.0,COARSESTEERING,2075,507495.200,00400000,00b0,14392;SOL_COMPUTED,DOPPLER_VELOCITY,0.000,0.000,0.1949,334.029536,-0.0767,0.0*ed8abf8e
+			*/
+			continue;
+		}
+		if (strstr(val[0], "%RAWIMUSXA") != NULL)
+		{
+			/*
+%RAWIMUSXA,2075,507495.165;00,13,2075,507495.165000000,00000000,32068,-1612,-1320,256,1536,-255*dd88585c
+			*/
+			double wn = atof(val[4]);
+			double ws = atof(val[5]);
+			double fxyz[3] = { atof(val[9]) * P2_29*200.0, -atof(val[8]) * P2_29 * 200.0, atof(val[7]) * P2_29 * 200.0 };
+			double wxyz[3] = { atof(val[12]) * P2_33 * 200.0, -atof(val[11]) * P2_33 * 200.0, atof(val[10]) * P2_33 * 200.0 };
+			if (fimu != NULL) fprintf(fimu, "%4.0f,%10.3f,%10.7f,%10.7f,%10.7f,%10.7f,%10.7f,%10.7f\n", wn, ws, fxyz[0], fxyz[1], fxyz[2], wxyz[0], wxyz[1], wxyz[2]);
 			continue;
 		}
 		if (strstr(val[0], "#INSPVAXA") != NULL)
@@ -256,8 +292,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	bool res;
-	decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
+	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
+	decode_span("C:\\aceinna\\span_decoder\\291\\novatel_CPT7-2019_10_18_13_57_55.ASC");
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
