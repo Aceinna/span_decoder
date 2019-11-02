@@ -54,7 +54,7 @@ static void parse_fields(char* const buffer, char** val)
 
 }
 
-void decode_span(const char* fname)
+void decode_span(const char* fname, int sensor)
 {
 	FILE* fdat = NULL;
 	FILE* fgga = NULL;
@@ -124,9 +124,16 @@ void decode_span(const char* fname)
 			*/
 			double wn = atof(val[4]);
 			double ws = atof(val[5]);
-			double fxyz[3] = { atof(val[9]) * P2_29*200.0, -atof(val[8]) * P2_29 * 200.0, atof(val[7]) * P2_29 * 200.0 };
-			double wxyz[3] = { atof(val[12]) * P2_33 * 200.0, -atof(val[11]) * P2_33 * 200.0, atof(val[10]) * P2_33 * 200.0 };
-			if (fimu != NULL) fprintf(fimu, "%4.0f,%10.3f,%10.7f,%10.7f,%10.7f,%10.7f,%10.7f,%10.7f\n", wn, ws, fxyz[0], fxyz[1], fxyz[2], wxyz[0], wxyz[1], wxyz[2]);
+			double wxyz_scale = 1.0;
+			double fxyz_scale = 1.0;
+			if (sensor == 0)
+			{
+				fxyz_scale = P2_29;
+				wxyz_scale = P2_33;
+			}
+			double fxyz[3] = { atof(val[9]) * fxyz_scale, -atof(val[8]) * fxyz_scale, atof(val[7]) * fxyz_scale };
+			double wxyz[3] = { atof(val[12]) * wxyz_scale, -atof(val[11]) * wxyz_scale, atof(val[10]) * wxyz_scale };
+			if (fimu != NULL) fprintf(fimu, "%4.0f,%14.7f,%14.10f,%14.10f,%14.10f,%14.10f,%14.10f,%14.10f\n", wn, ws, fxyz[0], fxyz[1], fxyz[2], wxyz[0], wxyz[1], wxyz[2]);
 			continue;
 		}
 		if (strstr(val[0], "#INSPVAXA") != NULL)
@@ -293,7 +300,7 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 int main()
 {
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
-	decode_span("C:\\aceinna\\span_decoder\\291\\novatel_CPT7-2019_10_18_13_57_55.ASC");
+	decode_span("C:\\304\\attitude\\novatel_CPT7-2019_10_31_15_27_41.ASC", 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
