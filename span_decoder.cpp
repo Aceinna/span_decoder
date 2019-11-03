@@ -126,6 +126,39 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
 			continue;
 		}
+		if (strstr(val[0], "RTKPOSA") != NULL)
+		{
+			/*
+#RTKPOSA,USB1,0,70.8,FINESTEERING,2076,112663.000,00000000,000e,10558;SOL_COMPUTED,NARROW_INT,40.04225041311,116.28967046789,49.2162,-9.7964,WGS84,0.0268,0.0212,0.0552,"1597",1.000,0.000,32,32,24,19,00,02,30,33*d9f90b44
+			*/
+			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) + atof(val[14]) };
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			double rms[3] = { atof(val[16]), atof(val[17]), atof(val[18]) };
+			int type = 0;
+			if (strstr(val[10], "SINGLE") != NULL) type = 1;
+			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
+			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
+			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
+			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
+			continue;
+		}
+		if (strstr(val[0], "RTKVELA") != NULL)
+		{
+			/*
+#BESTVELA,USB1,0,73.3,FINESTEERING,2076,112838.000,00000000,000e,10558;SOL_COMPUTED,DOPPLER_VELOCITY,0.000,1.000,8.6437,77.431308,0.0275,0.0*d771d968
+			/* TODO, output to fpos
+			*/
+			continue;
+		}
+		if (strstr(val[0], "HEADINGA") != NULL)
+		{
+			/*
+#HEADINGA,USB1,0,73.3,FINESTEERING,2076,112838.000,00000000,000e,10558;SOL_COMPUTED,INS_RTKFIXED,6.5060,79.0343,2.7232,0.0000,0.0000,0.0000,"",25,11,10,0,0,2,10,11*c8340b21
+			/* TODO, output to fpos
+			*/
+			continue;
+		}
 		if (strstr(val[0], "BESTGNSSVELA") != NULL)
 		{
 			/*
@@ -160,7 +193,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			else if (sensor == SPAN_ACEINNA)
 			{
 				fxyz_scale = 2.5e-4*grav_WGS84;
-				wxyz_scale = 5.0e-3*180.0/PI;
+				wxyz_scale = 5.0e-3*PI / 180.0;
 			}
 			if (sampleRate > 0.0)
 			{
