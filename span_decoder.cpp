@@ -164,6 +164,13 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			/*
 #BESTGNSSVELA,SPECIAL,0,45.0,COARSESTEERING,2075,507495.200,00400000,00b0,14392;SOL_COMPUTED,DOPPLER_VELOCITY,0.000,0.000,0.1949,334.029536,-0.0767,0.0*ed8abf8e
 			*/
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			float latency = atof(val[11]), vh = atof(val[13]), heading = atof(val[14])*PI/180.0, vu = atof(val[15]);
+			float vn = vh * sin(heading);
+			float ve = vh * cos(heading);
+			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%.3f\n", wn, ws, latency, ve, vn, vu);
+
 			continue;
 		}
 		if (strstr(val[0], "RANGECMPA") != NULL)
@@ -392,8 +399,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 int main()
 {
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
-	//decode_span("C:\\304\\attitude\\novatel_CPT7-2019_10_31_15_27_41.ASC", SPAN_CPT7, 100.0, 0);
-	decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
+	decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
+	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
