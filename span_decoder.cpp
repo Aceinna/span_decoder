@@ -167,8 +167,8 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			double wn = atof(val[5]);
 			double ws = atof(val[6]);
 			float latency = atof(val[11]), vh = atof(val[13]), heading = atof(val[14])*PI/180.0, vu = atof(val[15]);
-			float vn = vh * sin(heading);
-			float ve = vh * cos(heading);
+			float vn = vh * cos(heading);
+			float ve = vh * sin(heading);
 			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%.3f\n", wn, ws, latency, ve, vn, vu);
 
 			continue;
