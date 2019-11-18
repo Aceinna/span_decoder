@@ -1,33 +1,351 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
+    <Filter Include="资源文件">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="src\parsers">
+      <UniqueIdentifier>{774066a4-9248-4f7f-9eaf-4b9abb3c1ea9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\parsers">
+      <UniqueIdentifier>{c5321ba4-5ba7-4b67-aef3-0d7ded6c9219}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="swri_util">
+      <UniqueIdentifier>{04274d13-9829-4b72-bcda-7ea7c27c55cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{5c6d1fa1-1d01-49b2-a6f7-90a11f781662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\msg">
+      <UniqueIdentifier>{bd6f3aa9-59f0-46ff-adc7-0950c3d5ba13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rtklib">
+      <UniqueIdentifier>{459b8fc1-52d7-482d-9298-b35ff6e4f8d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="span_decoder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kml.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="swri_util\string_util.h">
+      <Filter>swri_util</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\bestgnssvel.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\bestvel.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\extendedsolutionstatus.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\gpgga.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\gprmc.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\heading2.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\inspvax.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rangecmp.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rangeinformation.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rawimu.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rawimusx.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rtkpos.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\rtkvel.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\signalmark.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\bestpos.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\bestutm.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\bestvel.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\bestxyz.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\clocksteering.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\corrimudata.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\dual_antenna_heading.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\gpgga.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\gpgsa.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\gpgsv.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\gphdt.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\gprmc.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\header.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\heading2.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\inscov.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\inspva.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\inspvax.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\insstdev.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\message_parser.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\parse_exception.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\parsing_utils.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\range.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\time.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\trackstat.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\binary_header.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\binary_message.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\nmea_sentence.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_gps.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_message_extractor.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_sentence.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="receiverstatus.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\messageheader.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\bestpos.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\channeltrackingstatus.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\clocksteering.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\correctedimudata.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\dualantennaheading.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\gpgsa.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\gpgsv.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\gphdt.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\inscov.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\inspva.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\insstdev.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\msgs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\range.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\satellite.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\time.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\trackstatchannel.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\trackstat.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\utmposition.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\velocity.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\xyz.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\rangecmp.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\shortheader.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\rawimusx.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\rawimu.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="rtklib\rtklib.h">
+      <Filter>rtklib</Filter>
+    </ClInclude>
+    <ClInclude Include="common\base.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="kml.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="minizipdll.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="swri_util\string_util.cpp">
+      <Filter>swri_util</Filter>
+    </ClCompile>
+    <ClCompile Include="src\novatel_gps.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\novatel_message_extractor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\bestpos.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\bestutm.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\bestvel.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\bestxyz.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\clocksteering.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\corrimudata.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\dual_antenna_heading.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\gpgga.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\gpgsa.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\gpgsv.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\gphdt.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\gprmc.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\header.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\heading2.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\inscov.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\inspva.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\inspvax.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\insstdev.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\parsing_utils.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\range.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\time.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\trackstat.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\span_decoder.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\shortheader.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\rawimusx.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\rawimu.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\rangecmp.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="rtklib\rtklib.cpp">
+      <Filter>rtklib</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

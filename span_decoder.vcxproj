@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -19,9 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{E25B8C32-B1D9-4CCF-83F6-9DD6D41667E9}</ProjectGuid>
-    <Keyword>Win32Proj</Keyword>
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{280E4B8A-8DA1-490F-8048-03653617198C}</ProjectGuid>
     <RootNamespace>spandecoder</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -30,27 +29,27 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -71,94 +70,171 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>./;./common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>./;./common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>.\boost;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>.\boost\lib32-msvc-14.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\local\boost_1_67_0_32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\local\boost_1_67_0_32\lib32-msvc-14.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>MINIZIPDLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="kml.cpp" />
-    <ClCompile Include="span_decoder.cpp" />
+    <ClInclude Include="common\base.h" />
+    <ClInclude Include="include\binary_header.h" />
+    <ClInclude Include="include\binary_message.h" />
+    <ClInclude Include="include\msg\bestpos.h" />
+    <ClInclude Include="include\msg\bestgnssvel.h" />
+    <ClInclude Include="include\msg\bestvel.h" />
+    <ClInclude Include="include\msg\channeltrackingstatus.h" />
+    <ClInclude Include="include\msg\clocksteering.h" />
+    <ClInclude Include="include\msg\correctedimudata.h" />
+    <ClInclude Include="include\msg\dualantennaheading.h" />
+    <ClInclude Include="include\msg\extendedsolutionstatus.h" />
+    <ClInclude Include="include\msg\gpgga.h" />
+    <ClInclude Include="include\msg\gpgsa.h" />
+    <ClInclude Include="include\msg\gpgsv.h" />
+    <ClInclude Include="include\msg\gphdt.h" />
+    <ClInclude Include="include\msg\gprmc.h" />
+    <ClInclude Include="include\msg\inscov.h" />
+    <ClInclude Include="include\msg\inspva.h" />
+    <ClInclude Include="include\msg\insstdev.h" />
+    <ClInclude Include="include\msg\messageheader.h" />
+    <ClInclude Include="include\msg\heading2.h" />
+    <ClInclude Include="include\msg\inspvax.h" />
+    <ClInclude Include="include\msg\msgs.h" />
+    <ClInclude Include="include\msg\range.h" />
+    <ClInclude Include="include\msg\rangecmp.h" />
+    <ClInclude Include="include\msg\rangeinformation.h" />
+    <ClInclude Include="include\msg\rawimu.h" />
+    <ClInclude Include="include\msg\rawimusx.h" />
+    <ClInclude Include="include\msg\rtkpos.h" />
+    <ClInclude Include="include\msg\rtkvel.h" />
+    <ClInclude Include="include\msg\satellite.h" />
+    <ClInclude Include="include\msg\signalmark.h" />
+    <ClInclude Include="include\msg\time.h" />
+    <ClInclude Include="include\msg\trackstatchannel.h" />
+    <ClInclude Include="include\msg\trackstat.h" />
+    <ClInclude Include="include\msg\utmposition.h" />
+    <ClInclude Include="include\msg\velocity.h" />
+    <ClInclude Include="include\msg\xyz.h" />
+    <ClInclude Include="include\nmea_sentence.h" />
+    <ClInclude Include="include\novatel_gps.h" />
+    <ClInclude Include="include\novatel_message_extractor.h" />
+    <ClInclude Include="include\novatel_sentence.h" />
+    <ClInclude Include="include\parsers\bestpos.h" />
+    <ClInclude Include="include\parsers\bestutm.h" />
+    <ClInclude Include="include\parsers\bestvel.h" />
+    <ClInclude Include="include\parsers\bestxyz.h" />
+    <ClInclude Include="include\parsers\clocksteering.h" />
+    <ClInclude Include="include\parsers\corrimudata.h" />
+    <ClInclude Include="include\parsers\dual_antenna_heading.h" />
+    <ClInclude Include="include\parsers\gpgga.h" />
+    <ClInclude Include="include\parsers\gpgsa.h" />
+    <ClInclude Include="include\parsers\gpgsv.h" />
+    <ClInclude Include="include\parsers\gphdt.h" />
+    <ClInclude Include="include\parsers\gprmc.h" />
+    <ClInclude Include="include\parsers\header.h" />
+    <ClInclude Include="include\parsers\heading2.h" />
+    <ClInclude Include="include\parsers\inscov.h" />
+    <ClInclude Include="include\parsers\inspva.h" />
+    <ClInclude Include="include\parsers\inspvax.h" />
+    <ClInclude Include="include\parsers\insstdev.h" />
+    <ClInclude Include="include\parsers\message_parser.h" />
+    <ClInclude Include="include\parsers\parse_exception.h" />
+    <ClInclude Include="include\parsers\parsing_utils.h" />
+    <ClInclude Include="include\parsers\range.h" />
+    <ClInclude Include="include\parsers\rangecmp.h" />
+    <ClInclude Include="include\parsers\rawimu.h" />
+    <ClInclude Include="include\parsers\rawimusx.h" />
+    <ClInclude Include="include\parsers\shortheader.h" />
+    <ClInclude Include="include\parsers\time.h" />
+    <ClInclude Include="include\parsers\trackstat.h" />
+    <ClInclude Include="receiverstatus.h" />
+    <ClInclude Include="rtklib\rtklib.h" />
+    <ClInclude Include="swri_util\string_util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="kml.h" />
-    <ClInclude Include="minizipdll.h" />
+    <ClCompile Include="rtklib\rtklib.cpp" />
+    <ClCompile Include="src\novatel_gps.cpp" />
+    <ClCompile Include="src\novatel_message_extractor.cpp" />
+    <ClCompile Include="src\parsers\bestpos.cpp" />
+    <ClCompile Include="src\parsers\bestutm.cpp" />
+    <ClCompile Include="src\parsers\bestvel.cpp" />
+    <ClCompile Include="src\parsers\bestxyz.cpp" />
+    <ClCompile Include="src\parsers\clocksteering.cpp" />
+    <ClCompile Include="src\parsers\corrimudata.cpp" />
+    <ClCompile Include="src\parsers\dual_antenna_heading.cpp" />
+    <ClCompile Include="src\parsers\gpgga.cpp" />
+    <ClCompile Include="src\parsers\gpgsa.cpp" />
+    <ClCompile Include="src\parsers\gpgsv.cpp" />
+    <ClCompile Include="src\parsers\gphdt.cpp" />
+    <ClCompile Include="src\parsers\gprmc.cpp" />
+    <ClCompile Include="src\parsers\header.cpp" />
+    <ClCompile Include="src\parsers\heading2.cpp" />
+    <ClCompile Include="src\parsers\inscov.cpp" />
+    <ClCompile Include="src\parsers\inspva.cpp" />
+    <ClCompile Include="src\parsers\inspvax.cpp" />
+    <ClCompile Include="src\parsers\insstdev.cpp" />
+    <ClCompile Include="src\parsers\parsing_utils.cpp" />
+    <ClCompile Include="src\parsers\range.cpp" />
+    <ClCompile Include="src\parsers\rangecmp.cpp" />
+    <ClCompile Include="src\parsers\rawimu.cpp" />
+    <ClCompile Include="src\parsers\rawimusx.cpp" />
+    <ClCompile Include="src\parsers\shortheader.cpp" />
+    <ClCompile Include="src\parsers\time.cpp" />
+    <ClCompile Include="src\parsers\trackstat.cpp" />
+    <ClCompile Include="src\span_decoder.cpp" />
+    <ClCompile Include="swri_util\string_util.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
