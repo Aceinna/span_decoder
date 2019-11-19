@@ -409,7 +409,7 @@ namespace novatel_gps_driver
         if (result > 0)
         {
           binary_messages.push_back(cur_msg);
-          sentence_start += binary_start_idx + result;
+          sentence_start = binary_start_idx + result;
         //  ROS_DEBUG("Parsed a binary message with %u bytes.", result);
         }
         else if (result == -1)
