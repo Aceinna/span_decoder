@@ -23,6 +23,114 @@
 #define	PI 3.14159265358979
 #endif
 
+typedef struct {        /* time struct */
+	time_t time;        /* time (s) expressed by standard time_t */
+	double sec;         /* fraction of second under 1 s */
+} gtime_t;
+
+extern gtime_t epoch2time(const double* ep)
+{
+	const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
+	gtime_t time = { 0 };
+	int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+	if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+
+	/* leap year if year%4==0 in 1901-2099 */
+	days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+	sec = (int)floor(ep[5]);
+	time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+	time.sec = ep[5] - sec;
+	return time;
+}
+
+static const double gpst0[] = { 1980,1, 6,0,0,0 }; /* gps time reference */
+
+/* time to gps time ------------------------------------------------------------
+* convert gtime_t struct to week and tow in gps time
+* args   : gtime_t t        I   gtime_t struct
+*          int    *week     IO  week number in gps time (NULL: no output)
+* return : time of week in gps time (s)
+*-----------------------------------------------------------------------------*/
+extern double time2gpst(gtime_t t, int* week)
+{
+	gtime_t t0 = epoch2time(gpst0);
+	time_t sec = t.time - t0.time;
+	int w = (int)(sec / (86400 * 7));
+
+	if (week) *week = w;
+	return (double)(sec - (double)w * 86400 * 7) + t.sec;
+}
+
+#define RE_WGS84    6378137.0           /* earth semimajor axis (WGS84) (m) */
+#define FE_WGS84    (1.0/298.257223563) /* earth flattening (WGS84) */
+
+
+/* transform geodetic to ecef position -----------------------------------------
+* transform geodetic position to ecef position
+* args   : double *pos      I   geodetic position {lat,lon,h} (rad,m)
+*          double *r        O   ecef position {x,y,z} (m)
+* return : none
+* notes  : WGS84, ellipsoidal height
+*-----------------------------------------------------------------------------*/
+extern void pos2ecef(const double* pos, double* r)
+{
+	double sinp = sin(pos[0]), cosp = cos(pos[0]), sinl = sin(pos[1]), cosl = cos(pos[1]);
+	double e2 = FE_WGS84 * (2.0 - FE_WGS84), v = RE_WGS84 / sqrt(1.0 - e2 * sinp * sinp);
+
+	r[0] = (v + pos[2]) * cosp * cosl;
+	r[1] = (v + pos[2]) * cosp * sinl;
+	r[2] = (v * (1.0 - e2) + pos[2]) * sinp;
+}
+
+/* multiply matrix -----------------------------------------------------------*/
+extern void matmul(const char* tr, int n, int k, int m, double alpha,
+	const double* A, const double* B, double beta, double* C)
+{
+	double d;
+	int i, j, x, f = tr[0] == 'N' ? (tr[1] == 'N' ? 1 : 2) : (tr[1] == 'N' ? 3 : 4);
+
+	for (i = 0; i < n; i++) for (j = 0; j < k; j++) {
+		d = 0.0;
+		switch (f) {
+		case 1: for (x = 0; x < m; x++) d += A[i + x * n] * B[x + j * m]; break;
+		case 2: for (x = 0; x < m; x++) d += A[i + x * n] * B[j + x * k]; break;
+		case 3: for (x = 0; x < m; x++) d += A[x + i * m] * B[x + j * m]; break;
+		case 4: for (x = 0; x < m; x++) d += A[x + i * m] * B[j + x * k]; break;
+		}
+		if (beta == 0.0) C[i + j * n] = alpha * d; else C[i + j * n] = alpha * d + beta * C[i + j * n];
+	}
+}
+
+/* ecef to local coordinate transfromation matrix ------------------------------
+* compute ecef to local coordinate transfromation matrix
+* args   : double *pos      I   geodetic position {lat,lon} (rad)
+*          double *E        O   ecef to local coord transformation matrix (3x3)
+* return : none
+* notes  : matirix stored by column-major order (fortran convention)
+*-----------------------------------------------------------------------------*/
+extern void xyz2enu(const double* pos, double* E)
+{
+	double sinp = sin(pos[0]), cosp = cos(pos[0]), sinl = sin(pos[1]), cosl = cos(pos[1]);
+
+	E[0] = -sinl;      E[3] = cosl;       E[6] = 0.0;
+	E[1] = -sinp * cosl; E[4] = -sinp * sinl; E[7] = cosp;
+	E[2] = cosp * cosl;  E[5] = cosp * sinl;  E[8] = sinp;
+}
+/* transform ecef vector to local tangental coordinate -------------------------
+* transform ecef vector to local tangental coordinate
+* args   : double *pos      I   geodetic position {lat,lon} (rad)
+*          double *r        I   vector in ecef coordinate {x,y,z}
+*          double *e        O   vector in local tangental coordinate {e,n,u}
+* return : none
+*-----------------------------------------------------------------------------*/
+extern void ecef2enu(const double* pos, const double* r, double* e)
+{
+	double E[9];
+
+	xyz2enu(pos, E);
+	matmul("NN", 3, 1, 3, 1.0, E, r, 0.0, e);
+}
 
 typedef enum INS_STATUS
 {
@@ -234,6 +342,8 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 
 	char* p, * q, * val[MAXFIELD];
 
+	double time_vel[4] = { 0.0 };
+
 	while (!feof(fdat))
 	{
 		fgets(buffer, sizeof(buffer), fdat);
@@ -320,7 +430,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			float latency = atof(val[11]), vh = atof(val[13]), heading = atof(val[14])*PI/180.0, vu = atof(val[15]);
 			float vn = vh * cos(heading);
 			float ve = vh * sin(heading);
-			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%.3f\n", wn, ws, latency, ve, vn, vu);
+			//if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%.3f\n", wn, ws, latency, ve, vn, vu);
 
 			continue;
 		}
@@ -379,6 +489,11 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			double rms_VelNEU[3] = { atof(val[24]), atof(val[24]), atof(val[26]) };
 			double rms_att[3] = { atof(val[27]), atof(val[28]), atof(val[29]) };
 			double timeLast = atof(val[31]);
+
+			time_vel[0] = ws;
+			time_vel[1] = vel_NEU[0]; // N
+			time_vel[2] = vel_NEU[1]; // E
+			time_vel[3] =-vel_NEU[2]; // D
 
 			strcpy(sol_status, strchr(val[9], ';')+1);
 
@@ -446,6 +561,130 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	}
 
 	return;
+}
+
+/* use SPAN CPT7 solutio as reference */
+bool diff_test(const char* fname_sol, const char* fname_span)
+{
+	FILE* fpsol = NULL, * fpspan = NULL, * fpdiff = NULL;
+
+	char fileName[255] = { 0 };
+	char outfilename[255] = { 0 };
+	char buffer[1024] = { 0 };
+
+	fpsol = fopen(fname_sol, "r");
+	fpspan = fopen(fname_span, "r");
+
+	if (fpsol == NULL || fpspan == NULL) return false;
+
+	strncpy(fileName, fname_sol, strlen(fname_sol));
+	char* result1 = strrchr(fileName, '.');
+	if (result1 != NULL) result1[0] = '\0';
+
+	sprintf(outfilename, "%s.diff", fileName);
+	fpdiff = fopen(outfilename, "w");
+
+	char* val[MAXFIELD];
+	//char* valspan[MAXFIELD];
+	double gpstow_sol = 0.0, gpstow_span = 0.0;
+	ins_pva sol_pva = { 0 }, span_pva = { 0 };
+
+	int idxpos = 0, idxvel = 0, idxatt = 0;
+
+	double ep[6] = { 0.0 };
+	ep[0] = 2019;
+	ep[1] = 11;
+	ep[2] = 8;
+	double posdata[10] = { 0.0 };
+	double posdata2[20] = { 0.0 };
+
+	while (!feof(fpsol))
+	{
+		memset(buffer, 0, sizeof(buffer));
+		//memset(val, 0, sizeof(val));*/
+
+		fgets(buffer, sizeof(buffer), fpsol);
+		if (strlen(buffer) <= 0||strstr(buffer, "$GPGGA")==NULL) continue;
+
+		parse_fields(buffer, val);
+
+		std::string temp = val[1];
+
+		ep[3] = atof(temp.substr(0, 2).c_str());
+		ep[4] = atof(temp.substr(2, 2).c_str());
+		ep[5] = atof(temp.substr(4).c_str())+18.0;
+
+		gtime_t time = epoch2time(ep);
+
+		int wk = 0;
+
+		posdata[0] = time2gpst(time, &wk);
+
+		temp = val[2]; // lat
+
+		ep[3] = atof(temp.substr(0, 2).c_str());
+		ep[4] = atof(temp.substr(2).c_str());
+
+		posdata[1] = (ep[3] + ep[4] / 60.0) * PI / 180.0;
+
+		temp = val[3]; // N
+
+		temp = val[4]; // lon
+
+		ep[3] = atof(temp.substr(0, 3).c_str());
+		ep[4] = atof(temp.substr(3).c_str());
+		posdata[2] =-(ep[3] + ep[4] / 60.0) * PI / 180.0;
+
+		temp = val[5]; // W
+
+		posdata[4] = atof(val[6]); // type
+
+		if (posdata[4] == 1.0) continue;
+
+		posdata[3] = atof(val[9]); // ht
+
+		while (!feof(fpspan))
+		{
+			if (posdata[0] < (posdata2[0] - 0.001)) break;
+			if (fabs(posdata[0] - posdata2[0]) < 0.01)
+			{
+				break;
+			}
+			memset(buffer, 0, sizeof(buffer));
+
+			fgets(buffer, sizeof(buffer), fpspan);
+			if (strlen(buffer) <= 0) continue;
+
+			int type = 0;
+			int fixID = 0;
+			int num = sscanf(buffer, "%i,%lf,%i,%lf,%lf,%lf,%lf,%lf,%lf,%i,%lf,%lf,%lf,%lf",
+				&wk, posdata2 + 0, &type, posdata2 + 1, posdata2 + 2, posdata2 + 3
+				, posdata2 + 4, posdata2 + 5, posdata2 + 6, &fixID
+				, posdata2 + 7, posdata2 + 8, posdata2 + 9, posdata2 + 10);
+
+			posdata2[1] *= PI / 180.0;
+			posdata2[2] *= PI / 180.0;
+			posdata2[11] = fixID;
+		}
+
+		if (fabs(posdata[0] - posdata2[0]) < 0.01 && posdata2[11]==4)
+		{
+			double xyz1[3] = { 0.0 };
+			double xyz2[3] = { 0.0 };
+			pos2ecef(posdata + 1, xyz1);
+			pos2ecef(posdata2 + 1, xyz2);
+			double diffxyz[3] = { xyz2[0] - xyz1[0], xyz2[1] - xyz1[1],xyz2[2] - xyz1[2] };
+			double diffenu[3] = { 0.0 };
+			ecef2enu(posdata2 + 1, diffxyz, diffenu);
+			fprintf(fpdiff, "%10.3f,%10.3f,%10.3f,%10.3f,%3i,%3i\n", posdata[0], diffenu[0], diffenu[1], diffenu[2], int(posdata[4]), (int)posdata2[11]);
+		}
+	}
+
+	if (fpsol != NULL) fclose(fpsol);
+	if (fpspan != NULL) fclose(fpspan);
+	if (fpdiff != NULL) fclose(fpdiff);
+
+	return true;
 }
 
 
@@ -555,8 +794,12 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	decode_span("C:\\Users\\da\\Documents\\323\\5\\novatel_CPT7-2019_11_19_17_46_06.ASC", SPAN_CPT7, 100.0, 0);
-	//decode_span("C:\\Users\\da\\Documents\\Attituder\\305\\novatel_FLX6-2019_11_01_15_44_02.ASC", SPAN_FLEX6, 100.0, 0);
+	//decode_span("C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
+
+	diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
+	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
+	//decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
+	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
