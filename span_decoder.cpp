@@ -48,6 +48,138 @@ typedef struct
 	float azimuth;
 } ins_pva;
 
+typedef struct {        /* time struct */
+	time_t time;        /* time (s) expressed by standard time_t */
+	double sec;         /* fraction of second under 1 s */
+} gtime_t;
+
+#define SECONDS_IN_WEEK (604800)
+const static double gpst0[] = { 1980, 1, 6, 0, 0, 0 }; /* gps time reference */
+
+static gtime_t epoch2time(const double* ep)
+{
+	const int doy[] = { 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 };
+	gtime_t time = { 0 };
+	int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+	if (year < 1970 || 2099 < year || mon < 1 || 12 < mon)
+		return time;
+
+	/* leap year if year%4==0 in 1901-2099 */
+	days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+	sec = (int)floor(ep[5]);
+	time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+	time.sec = ep[5] - sec;
+	return time;
+}
+static gtime_t timeadd(gtime_t t, double sec)
+{
+	double tt;
+
+	t.sec += sec;
+	tt = floor(t.sec);
+	t.time += (int)tt;
+	t.sec -= tt;
+	return t;
+}
+static gtime_t gpst2utc(gtime_t t)
+{
+	return timeadd(t, -18.0);
+}
+
+static gtime_t gpst2time(int week, double sec)
+{
+	gtime_t t = epoch2time(gpst0);
+
+	if (sec < -1E9 || 1E9 < sec)
+		sec = 0.0;
+	t.time += SECONDS_IN_WEEK * week + (int)sec;
+	t.sec = sec - (int)sec;
+	return t;
+}
+
+static void time2epoch(gtime_t t, double* ep)
+{
+	const int mday[] = {/* # of days in a month */
+						31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+						31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	int days, sec, mon, day;
+
+	/* leap year if year%4==0 in 1901-2099 */
+	days = (int)(t.time / 86400);
+	sec = (int)(t.time - (time_t)days * 86400);
+	for (day = days % 1461, mon = 0; mon < 48; mon++)
+	{
+		if (day >= mday[mon])
+			day -= mday[mon];
+		else
+			break;
+	}
+	ep[0] = 1970 + days / 1461 * 4 + mon / 12;
+	ep[1] = mon % 12 + 1;
+	ep[2] = day + 1;
+	ep[3] = sec / 3600;
+	ep[4] = sec % 3600 / 60;
+	ep[5] = sec % 60 + t.sec;
+}
+
+static void deg2dms(double deg, double* dms, int ndec)
+{
+	double sign = deg < 0.0 ? -1.0 : 1.0, a = fabs(deg);
+	double unit = pow(0.1, ndec);
+	dms[0] = floor(a);
+	a = (a - dms[0]) * 60.0;
+	dms[1] = floor(a);
+	a = (a - dms[1]) * 60.0;
+	dms[2] = floor(a / unit + 0.5) * unit;
+	if (dms[2] >= 60.0)
+	{
+		dms[2] = 0.0;
+		dms[1] += 1.0;
+		if (dms[1] >= 60.0)
+		{
+			dms[1] = 0.0;
+			dms[0] += 1.0;
+		}
+	}
+	dms[0] *= sign;
+}
+
+static int print_nmea_gga(gtime_t time, double* xyz, int nsat, int type, double dop, double age, char* buff)
+{
+	double h, ep[6], pos[3], dms1[3], dms2[3];
+	char* p = (char*)buff, * q, sum;
+
+	if ((xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) < 1.0)
+	{
+		p += sprintf(p, "$GPGGA,,,,,,,,,,,,,,");
+		for (q = (char*)buff + 1, sum = 0; *q; q++)
+			sum ^= *q;
+		p += sprintf(p, "*%02X%c%c", sum, 0x0D, 0x0A);
+	}
+	else
+	{
+		time = gpst2utc(time);
+		time2epoch(time, ep);
+#if 0
+		int sss = 0;
+		if (ep[3] == 10.0 && ep[4] == 29.0 && fabs(ep[5] - 46.1) < 0.01)
+			sss = 1;
+#endif
+		pos[0] = xyz[0]; pos[1] = xyz[1]; pos[2] = xyz[2];
+		h = 0.0; //geoidh(pos);
+		deg2dms(fabs(pos[0]), dms1, 7);
+		deg2dms(fabs(pos[1]), dms2, 7);
+		p += sprintf(p, "$GPGGA,%02.0f%02.0f%05.2f,%02.0f%010.7f,%s,%03.0f%010.7f,%s,%d,%02d,%.1f,%.3f,M,%.3f,M,%.1f,",
+			ep[3], ep[4], ep[5], dms1[0], dms1[1] + dms1[2] / 60.0, pos[0] >= 0 ? "N" : "S",
+			dms2[0], dms2[1] + dms2[2] / 60.0, pos[1] >= 0 ? "E" : "W", type,
+			nsat, dop, pos[2] - h, h, age);
+		for (q = (char*)buff + 1, sum = 0; *q; q++)
+			sum ^= *q; /* check-sum */
+		p += sprintf(p, "*%02X%c%c", sum, 0x0D, 0x0A);
+	}
+	return p - (char*)buff;
+}
 
 static void parse_fields(char* const buffer, char** val)
 {
@@ -73,6 +205,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	FILE* fimu = NULL;
 	FILE* fins = NULL;
 	FILE* fkml = NULL;
+	FILE* fhdg = NULL;
 
 	char fileName[255] = { 0 };
 	char outfilename[255] = { 0 };
@@ -89,6 +222,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	sprintf(outfilename, "%s-pos.csv", fileName); fpos = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-imu.csv", fileName); fimu = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-ins.csv", fileName); fins = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-hdg.csv", fileName); fhdg = fopen(outfilename, "w");
 	sprintf(out_kml_fpath, "%s.kml", fileName); fkml = fopen(out_kml_fpath, "w");
 
 	if (fkml!=NULL) print_kml_heder(fkml);
@@ -124,6 +258,12 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
 			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
 			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
+			
+			gtime_t gt = gpst2time(wn, ws);
+			char gga[256] = { 0 };
+			print_nmea_gga(gt, blh, 1, 1, 1.0, 1.0, gga);
+			if (NULL != fgga) fprintf(fgga, "%s", gga);
+			
 			continue;
 		}
 		if (strstr(val[0], "RTKPOSA") != NULL)
@@ -151,12 +291,23 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			*/
 			continue;
 		}
-		if (strstr(val[0], "HEADINGA") != NULL)
+		if (strstr(val[0], "HEADING2A") != NULL)
 		{
 			/*
-#HEADINGA,USB1,0,73.3,FINESTEERING,2076,112838.000,00000000,000e,10558;SOL_COMPUTED,INS_RTKFIXED,6.5060,79.0343,2.7232,0.0000,0.0000,0.0000,"",25,11,10,0,0,2,10,11*c8340b21
+#HEADING2A,SPECIAL,0,23.5,FINESTEERING,2078,516279.000,02004000,1684,15826;SOL_COMPUTED,NARROW_INT,-1.000000000,239.906387329,-0.616668701,0.0,0.206709728,0.369018108,"H64Z","H64Z",32,29,29,23,04,01,15,33*272e3cb4
 			/* TODO, output to fpos
 			*/
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			float baseline_len = atof(val[10]);
+			float heading_da = atof(val[11]); // dual antenna heading
+			float pitch_da = atof(val[12]); // dual antenna pitch/roll, depend on antenna installation
+			int type = 0;
+			if (strstr(val[10], "SINGLE") != NULL) type = 1;
+			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
+			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
+			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
+			if (fhdg != NULL) fprintf(fhdg, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%d\n", wn, ws, baseline_len, heading_da, pitch_da, type);
 			continue;
 		}
 		if (strstr(val[0], "BESTGNSSVELA") != NULL)
@@ -233,9 +384,14 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 
 			if (fins != NULL)
 			{
-				fprintf(fins, "%4i,%10.3f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%14.9f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f\n", wn, ws
-					, blh[0], blh[1], blh[2], vel_NEU[0], vel_NEU[1], vel_NEU[2], att[0], att[1], att[2]
-					, rms_PosNEU[0], rms_PosNEU[1], rms_PosNEU[2], rms_VelNEU[0], rms_VelNEU[1], rms_VelNEU[2], rms_att[0], rms_att[1], rms_att[2]
+				fprintf(fins, "%4i,%10.3f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%14.9f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f\n"
+					, wn, ws
+					, blh[0], blh[1], blh[2]
+					, vel_NEU[0], vel_NEU[1], vel_NEU[2]
+					, att[0], att[1], att[2]
+					, rms_PosNEU[0], rms_PosNEU[1], rms_PosNEU[2]
+					, rms_VelNEU[0], rms_VelNEU[1], rms_VelNEU[2]
+					, rms_att[0], rms_att[1], rms_att[2]
 				);
 			}
 
@@ -270,6 +426,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	if (fgps != NULL) fclose(fgps);
 	if (fimu != NULL) fclose(fimu);
 	if (fins != NULL) fclose(fins);
+	if (fhdg != NULL) fclose(fhdg);
 	if (fkml != NULL) {
 		fclose(fkml);
 
@@ -398,9 +555,8 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
-	decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
-	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
+	decode_span("C:\\Users\\da\\Documents\\323\\5\\novatel_CPT7-2019_11_19_17_46_06.ASC", SPAN_CPT7, 100.0, 0);
+	//decode_span("C:\\Users\\da\\Documents\\Attituder\\305\\novatel_FLX6-2019_11_01_15_44_02.ASC", SPAN_FLEX6, 100.0, 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 }
 
