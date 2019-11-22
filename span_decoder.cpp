@@ -156,30 +156,8 @@ typedef struct
 	float azimuth;
 } ins_pva;
 
-typedef struct {        /* time struct */
-	time_t time;        /* time (s) expressed by standard time_t */
-	double sec;         /* fraction of second under 1 s */
-} gtime_t;
-
 #define SECONDS_IN_WEEK (604800)
-const static double gpst0[] = { 1980, 1, 6, 0, 0, 0 }; /* gps time reference */
 
-static gtime_t epoch2time(const double* ep)
-{
-	const int doy[] = { 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 };
-	gtime_t time = { 0 };
-	int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
-
-	if (year < 1970 || 2099 < year || mon < 1 || 12 < mon)
-		return time;
-
-	/* leap year if year%4==0 in 1901-2099 */
-	days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
-	sec = (int)floor(ep[5]);
-	time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
-	time.sec = ep[5] - sec;
-	return time;
-}
 static gtime_t timeadd(gtime_t t, double sec)
 {
 	double tt;
