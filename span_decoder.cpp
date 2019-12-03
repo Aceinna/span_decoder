@@ -345,11 +345,17 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
 			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
 			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
-			if (fpos != NULL) fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
-			
+			if (fpos != NULL) {
+				fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
+#ifdef GNSS_ONLY
+				char solsts[28] = { "GNSS only" };
+				print_kml_gga(fkml, blh[0], blh[1], blh[2], type, ws, 0.0, solsts);
+#endif
+			}
+
 			gtime_t gt = gpst2time(wn, ws);
 			char gga[256] = { 0 };
-			print_nmea_gga(gt, blh, 1, 1, 1.0, 1.0, gga);
+			print_nmea_gga(gt, blh, 1, type, 1.0, 1.0, gga);
 			if (NULL != fgga) fprintf(fgga, "%s", gga);
 			
 			continue;
@@ -505,8 +511,9 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			double time = atof(val[6]);
 			//printf("GPS TOW: %f\n", time);
 			float heading = atof(val[20]);
-
+#ifndef GNSS_ONLY
 			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time, heading, sol_status);
+#endif			
 			continue;
 		}
 	}
@@ -772,9 +779,9 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	//decode_span("C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
+	decode_span("C:\\Users\\da\\Documents\\336\\novatel_CPT7-2019_12_02_13_08_46.ASC", SPAN_CPT7, 100.0, 0);
 
-	diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
+	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
 	//decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
 	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
