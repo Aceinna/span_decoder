@@ -70,6 +70,7 @@ void print_kml_gga(FILE *fKML, double lat, double lon, double ht, int solType, d
 	int hh = 0;
 	int mm = 0;
 	if (fKML == NULL) return;
+    if (lat == 0.0 || lon == 0.0 || ht == 0.0) return;
 	if (fKML) {
 		day = (int)floor(time / (3600 * 24));
 		time -= day * 24 * 3600;
