@@ -139,7 +139,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 
 	iput_file.seekg(0, std::ios::beg);
 
-	int readlength = 20;
+	int readlength = 50;
 
 	int32 tcoutwhile = (floor)(length / readlength);
 	buffer_read_.reserve(readlength);
