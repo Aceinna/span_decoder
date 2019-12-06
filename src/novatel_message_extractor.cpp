@@ -392,6 +392,8 @@ namespace novatel_gps_driver
     //  ROS_DEBUG("Binary start: %lu   ASCII start / end / invalid: %lu / %lu / %lu",
                 //binary_start_idx, ascii_start_idx, ascii_end_idx, invalid_ascii_idx);
 
+	 // ascii_start_idx = std::string::npos;
+	 // ascii_end_idx = std::string::npos;
       if (binary_start_idx == std::string::npos && ascii_start_idx == std::string::npos)
       {
         // If we don't see either a binary or an ASCII message, just give up.
@@ -409,7 +411,7 @@ namespace novatel_gps_driver
         if (result > 0)
         {
           binary_messages.push_back(cur_msg);
-          sentence_start = binary_start_idx + result;
+          sentence_start = binary_start_idx + result;   //XUZHENGPENG
         //  ROS_DEBUG("Parsed a binary message with %u bytes.", result);
         }
         else if (result == -1)

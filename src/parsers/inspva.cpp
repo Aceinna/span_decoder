@@ -86,6 +86,9 @@ novatel_gps_driver::InspvaParser::ParseBinary(const novatel_gps_driver::BinaryMe
     case 3:
       ros_msg->status = "INS_SOLUTION_GOOD";
       break;
+	case 4:
+		ros_msg->status = "INS_SOLUTION_GOOD";
+	break;
     case 6:
       ros_msg->status = "INS_SOLUTION_FREE";
       break;

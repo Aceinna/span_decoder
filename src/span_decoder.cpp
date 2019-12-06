@@ -56,6 +56,7 @@ bool publish_diagnostics_ = TRUE;
 bool publish_sync_diagnostic_ = TRUE;
 bool publish_gps_bin = TRUE;
 bool publish_inspvax_ = TRUE;
+bool publish_inspva_ = TRUE;
 bool publish_kml_ = TRUE;
 
 static std::map<uint8, std::pair<std::vector<double>, std::string>> rates = {
@@ -120,7 +121,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 		output_kml.open(filename + ".kml");
 	}
 
-	output_process.open(filename + "process.csv");
+	output_process.open(filename + "process");
 	//iput_file.open(fname.c_str());
 	iput_file.open(fname.c_str(), std::ios::in | std::ios::binary);
 	iput_file.seekg(0, std::ios::beg);
@@ -138,7 +139,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 
 	iput_file.seekg(0, std::ios::beg);
 
-	int readlength = 100;
+	int readlength = 20;
 
 	int32 tcoutwhile = (floor)(length / readlength);
 	buffer_read_.reserve(readlength);
@@ -265,7 +266,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 
 			}
 		}
-				if (publish_imu_messages_ & (!is_acena))
+		if (publish_imu_messages_ & (!is_acena))
 		{
 			std::vector<novatel_gps_msgs::RawimusxPtr> rawimusx_msgs;
 			gps_.GetRawimusxMessages(rawimusx_msgs);
@@ -281,6 +282,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 					wxyz_scale = rates[msg->imutype].second[2];					
 				}
 				output_imu << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->gps_seconds << ","
 					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
 					<< std::setw(14) << std::setprecision(10) << msg->x_accel * fxyz_scale * sample_rate << ","
 					<< std::setw(14) << std::setprecision(10) << msg->y_accel * fxyz_scale * sample_rate << ","
@@ -302,8 +304,8 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 			double sample_rate;
 			for (const auto& msg : rawimu_msgs)
 			{
-
 				output_imu << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->gps_seconds << ","
 					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->x_accel))) * grav_WGS84 << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->y_accel))) * grav_WGS84 << ","
@@ -312,8 +314,9 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->y_gyro))) << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->z_gyro)))
 					<< std::endl;
-				output_process << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+				output_process <<"$GPIMU,"
 					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->gps_seconds /1000 << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->x_accel))) * grav_WGS84 << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->y_accel))) * grav_WGS84 << ","
 					<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->z_accel))) * grav_WGS84 << ","
@@ -333,8 +336,13 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 
 			for (const auto& msg : bestpos_msgs)
 			{
-				output_pos << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+				int type = 0;
+				if (!strncmp(msg->position_type.c_str(), "FLOATCONV", 9))type =5;
+				if (!strncmp(msg->position_type.c_str(), "FIXEDPOS", 8))type = 4;
+
+					output_pos << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
 					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+					<< msg->position_type << ","
 					<< std::setw(14) << std::setprecision(9) << msg->lat << ","
 					<< std::setw(14) << std::setprecision(9) << msg->lon << ","
 					<< std::setw(10) << std::setprecision(4) << msg->height << ","
@@ -342,14 +350,15 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 					<< std::setw(10) << std::setprecision(4) << msg->lon_sigma << ","
 					<< std::setw(10) << std::setprecision(4) << msg->height_sigma
 					<< std::endl;
-				output_process << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
-					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+				output_process <<"$GPGNSS,"
+					<< std::setw(10) << "0,"<<std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
 					<< std::setw(14) << std::setprecision(9) << msg->lat << ","
 					<< std::setw(14) << std::setprecision(9) << msg->lon << ","
 					<< std::setw(10) << std::setprecision(4) << msg->height << ","
 					<< std::setw(10) << std::setprecision(4) << msg->lat_sigma << ","
 					<< std::setw(10) << std::setprecision(4) << msg->lon_sigma << ","
-					<< std::setw(10) << std::setprecision(4) << msg->height_sigma
+					<< std::setw(10) << std::setprecision(4) << msg->height_sigma << ","
+					<< type 
 					<< std::endl;
 			}
 
@@ -365,6 +374,28 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 				output_gps << msg->numb_of_observ << std::endl;
 			}
 		}
+
+		if (publish_inspva_)
+		{
+			std::vector<novatel_gps_msgs::InspvaPtr> inspva_msgs;
+			gps_.GetInspvaMessages(inspva_msgs);
+			for (const auto& msg : inspva_msgs)
+			{
+				output_ins << "$INSPVA,"<<std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+					<< std::setw(14) << std::setprecision(9) << msg->latitude << ","
+					<< std::setw(14) << std::setprecision(9) << msg->longitude << ","
+					<< std::setw(10) << std::setprecision(4) << msg->height << ","
+					<< std::setw(10) << std::setprecision(4) << msg->north_velocity << ","
+					<< std::setw(10) << std::setprecision(4) << msg->east_velocity << ","
+					<< std::setw(10) << std::setprecision(4) << msg->up_velocity << ","
+					<< std::setw(14) << std::setprecision(9) << msg->roll << ","
+					<< std::setw(14) << std::setprecision(9) << msg->pitch << ","
+					<< std::setw(14) << std::setprecision(9) << msg->azimuth << ","
+                    << msg->status
+					<< std::endl;
+			}
+		} //GNSS/INS data
 
 
 
@@ -395,7 +426,7 @@ void decode_span(const std::string fname, int sensortype, double sampleRate, int
 
 int main(int argc, char **argv)
 {
-	std::string inutfilename = "imugpslog5"; //ParsingData.ASC imugpslog ParsingData.GPSnovatel_CPT7-2019_10_19_17_09_13.ASC
+	std::string inutfilename = "textlog10"; //ParsingData.ASC imugpslog ParsingData.GPSnovatel_CPT7-2019_10_19_17_09_13.ASC
 	double sampleRate = 1.0;  
 	publish_kml_ = TRUE;
 	int sensortype = 0;  
