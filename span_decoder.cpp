@@ -355,7 +355,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 
 			gtime_t gt = gpst2time(wn, ws);
 			char gga[256] = { 0 };
-			print_nmea_gga(gt, blh, 1, type, 1.0, 1.0, gga);
+			print_nmea_gga(gt, blh, atof(val[23]), type, 1.0, atof(val[20]), gga);
 			if (NULL != fgga) fprintf(fgga, "%s", gga);
 			
 			continue;
@@ -508,11 +508,54 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			strcpy(sol_status+strlen(sol_status), ",");
 			strcpy(sol_status+strlen(sol_status), val[10]);
 
-			double time = atof(val[6]);
-			//printf("GPS TOW: %f\n", time);
+			//printf("GPS TOW: %f\n", ws);
 			float heading = atof(val[20]);
 #ifndef GNSS_ONLY
-			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, time, heading, sol_status);
+			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
+#endif			
+			continue;
+		}
+		if (strstr(val[0], "INSPVASA") != NULL)
+		{
+			/*
+%INSPVASA,2083,374524.200;2083,374524.200000000,31.51668826020,120.38636567293,13.9998,13.1095,-12.9404,-0.0070,2.093819658,2.854168081,316.626703726,INS_SOLUTION_GOOD*8fc5adb1
+			*/
+			//if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
+			int wn = atoi(val[1]);
+			double ws = atof(val[3]);
+			double blh[3] = { atof(val[4]), atof(val[5]), atof(val[6]) };
+			if (blh[0] == 0.0 && blh[1] == 0.0 && blh[2] == 0.0) continue;
+			double vel_NEU[3] = { atof(val[7]), atof(val[8]), -atof(val[9]) };
+			double att[3] = { atof(val[10]), atof(val[11]), atof(val[12]) };
+
+			if (fins != NULL)
+			{
+				fprintf(fins, "%4i,%10.3f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%14.9f,%14.9f,%14.9f\n"
+					, wn, ws
+					, blh[0], blh[1], blh[2]
+					, vel_NEU[0], vel_NEU[1], vel_NEU[2]
+					, att[0], att[1], att[2]
+				);
+			}
+
+			//int solType = -1;
+			//if (strstr(val[10], "INS_PSRSP") != NULL) solType = 1;
+			//else if (strstr(val[10], "INS_PSRDIFF") != NULL) solType = 2;
+			//else if (strstr(val[10], "PSRDIFF") != NULL) solType = 2;
+			//else if (strstr(val[10], "PROPAGATED") != NULL) solType = 3;
+			//else if (strstr(val[10], "INS_RTKFLOAT") != NULL) solType = 5;
+			//else if (strstr(val[10], "INS_RTKFIXED") != NULL) solType = 4;
+			//else {
+			//	solType = 1;
+			//	//printf("not supported\n");
+			//}
+			/*strcpy(sol_status + strlen(sol_status), ",");
+			strcpy(sol_status + strlen(sol_status), val[10]);
+*/
+			float heading = 0.0f;
+			strcpy(sol_status, val[13]);
+#ifdef INSPVA_SHORT
+			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
 #endif			
 			continue;
 		}
@@ -779,7 +822,7 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	decode_span("C:\\Users\\da\\Documents\\336\\novatel_CPT7-2019_12_02_13_08_46.ASC", SPAN_CPT7, 100.0, 0);
+	decode_span("C:\\Users\\da\\Documents\\346\\1\\novatel_CPT7-2019_12_12_15_52_00.ASC", SPAN_CPT7, 100.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
