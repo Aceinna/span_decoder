@@ -734,7 +734,7 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 	char* result1 = strrchr(fileName, '.');
 	if (result1 != NULL) result1[0] = '\0';
 
-	sprintf(outfilename, "%s.diff", fileName); 
+	sprintf(outfilename, "%s-ins.diff", fileName); 
 	fpdiff = fopen(outfilename, "w");
 
 	char* val[MAXFIELD];
@@ -794,20 +794,151 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 		}
 		
 		if (fabs(gpstow_span - gpstow_sol) < 0.005) {
+
+			double lat1[3] = { sol_pva.lat * PI / 180.0, sol_pva.lon * PI / 180.0, sol_pva.hgt };
+			double lat2[3] = { span_pva.lat * PI / 180.0, span_pva.lon * PI / 180.0, span_pva.hgt };
+			double xyz1[3] = { 0.0 };
+			double xyz2[3] = { 0.0 };
+			pos2ecef(lat1, xyz1);
+			pos2ecef(lat2, xyz2);
+			double diffxyz[3] = { xyz2[0] - xyz1[0], xyz2[1] - xyz1[1],xyz2[2] - xyz1[2] };
+			double diffenu[3] = { 0.0 };
+			ecef2enu(lat2, diffxyz, diffenu);
+
 			printf("sol time: %f, span time: %f\n", gpstow_sol, gpstow_span);
 
-			fprintf(fpdiff, "%.3f,%lf,%lf,%f,%f,%f,%f,%f,%f,%f,", gpstow_sol,
+			fprintf(fpdiff, "%10.3f,%14.9f,%14.9f,%7.3f,%7.3f,%7.3f,%7.3f,%10.4f,%10.4f,%10.4f,", gpstow_sol,
 				sol_pva.lat, sol_pva.lon, sol_pva.hgt,
 				sol_pva.vn, sol_pva.ve, sol_pva.vu,
 				sol_pva.roll, sol_pva.pitch, sol_pva.azimuth);
 
-			fprintf(fpdiff, "%lf,%lf,%f,%f,%f,%f,%f,%f,%f,",
+			fprintf(fpdiff, "%14.9f,%14.9f,%7.3f,%7.3f,%7.3f,%7.3f,%10.4f,%10.4f,%10.4f,",
 				span_pva.lat, span_pva.lon, span_pva.hgt,
 				span_pva.vn, span_pva.ve, span_pva.vu,
 				span_pva.roll, span_pva.pitch, span_pva.azimuth);
 
-			fprintf(fpdiff, "%.9f,%.9f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
-				sol_pva.lat - span_pva.lat, sol_pva.lon - span_pva.lon, sol_pva.hgt- span_pva.hgt,
+			fprintf(fpdiff, "%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f\n",
+				diffenu[1], diffenu[0], diffenu[2],
+				sol_pva.vn - span_pva.vn, sol_pva.ve - span_pva.ve, sol_pva.vu - span_pva.vu,
+				sol_pva.roll - span_pva.roll, sol_pva.pitch - span_pva.pitch, sol_pva.azimuth - span_pva.azimuth);
+		}
+	}
+
+	if (fpsol != NULL) fclose(fpsol);
+	if (fpspan != NULL) fclose(fpspan);
+	if (fpdiff != NULL) fclose(fpdiff);
+
+	return true;
+}
+
+
+/* use SPAN CPT7 solutio as reference */
+bool diff_with_span_rtk(const char* fname_sol, const char* fname_span)
+{
+	FILE* fpsol = NULL, * fpspan = NULL, * fpdiff = NULL;
+
+	char fileName[255] = { 0 };
+	char outfilename[255] = { 0 };
+	char buffer[1024] = { 0 };
+
+	fpsol = fopen(fname_sol, "r");
+	fpspan = fopen(fname_span, "r");
+
+	if (fpsol == NULL || fpspan == NULL) return false;
+
+	strncpy(fileName, fname_sol, strlen(fname_sol));
+	char* result1 = strrchr(fileName, '.');
+	if (result1 != NULL) result1[0] = '\0';
+
+	sprintf(outfilename, "%s-rtk.diff", fileName);
+	fpdiff = fopen(outfilename, "w");
+
+	char* val[MAXFIELD];
+	//char* valspan[MAXFIELD];
+	double gpstow_sol = 0.0, gpstow_span = 0.0;
+	ins_pva sol_pva = { 0 }, span_pva = { 0 };
+
+	int idxpos = 0, idxvel = 0, idxatt = 0;
+
+	while (!feof(fpsol))
+	{
+		memset(buffer, 0, sizeof(buffer));
+		//memset(val, 0, sizeof(val));*/
+
+		fgets(buffer, sizeof(buffer), fpsol);
+		if (strlen(buffer) <= 0) continue;
+
+		parse_fields(buffer, val);
+
+		if (!strstr(val[0], "#BESTGNSSPOSA")) continue;
+
+		if (!strstr(val[10], "NARROW_INT")) continue;
+		gpstow_sol = atof(val[6]);
+
+		idxpos = 11, idxvel = 16, idxatt = 18;
+		sol_pva = {0 };
+		sol_pva.gps_tow = gpstow_sol;
+		sol_pva.lat = atof(val[idxpos]); sol_pva.lon = atof(val[idxpos + 1]); sol_pva.hgt = atof(val[idxpos + 2]) + atof(val[idxpos + 3]);
+		sol_pva.vn = atof(val[idxvel]); sol_pva.ve = atof(val[idxvel + 1]); sol_pva.vu = atof(val[idxvel + 2]);
+		//sol_pva.roll = atof(val[idxatt]); sol_pva.pitch = atof(val[idxatt + 1]); sol_pva.azimuth = atof(val[idxatt + 2]);
+
+
+		if (gpstow_span < gpstow_sol) {
+
+			do {
+				memset(buffer, 0, sizeof(buffer));
+				//memset(val, 0, sizeof(val));*/
+
+				fgets(buffer, sizeof(buffer), fpspan);
+				if (strlen(buffer) <= 0) continue;
+
+
+				parse_fields(buffer, val);
+
+				if (!strstr(val[0], "#BESTGNSSPOSA")) continue;
+
+				if (!strstr(val[10], "NARROW_INT") ) continue;
+				gpstow_span = atof(val[6]);
+
+				idxpos = 11; idxvel = 16; idxatt = 18;
+				span_pva = { 0 };
+				span_pva.gps_tow = gpstow_span;
+				span_pva.lat = atof(val[idxpos]); span_pva.lon = atof(val[idxpos + 1]); span_pva.hgt = atof(val[idxpos + 2]) + atof(val[idxpos + 3]);
+				span_pva.vn = atof(val[idxvel]); span_pva.ve = atof(val[idxvel + 1]); span_pva.vu = atof(val[idxvel + 2]);
+				//span_pva.roll = atof(val[idxatt]); span_pva.pitch = atof(val[idxatt + 1]); span_pva.azimuth = atof(val[idxatt + 2]);
+
+				if (gpstow_span >= gpstow_sol) {
+					break;
+				}
+
+			} while (!feof(fpspan));
+		}
+
+		if (fabs(gpstow_span - gpstow_sol) < 0.005) {
+			printf("sol time: %f, span time: %f\n", gpstow_sol, gpstow_span);
+
+			double lat1[3] = { sol_pva.lat * PI / 180.0, sol_pva.lon * PI / 180.0, sol_pva.hgt };
+			double lat2[3] = { span_pva.lat * PI / 180.0, span_pva.lon * PI / 180.0, span_pva.hgt };
+			double xyz1[3] = { 0.0 };
+			double xyz2[3] = { 0.0 };
+			pos2ecef(lat1, xyz1);
+			pos2ecef(lat2, xyz2);
+			double diffxyz[3] = { xyz2[0] - xyz1[0], xyz2[1] - xyz1[1],xyz2[2] - xyz1[2] };
+			double diffenu[3] = { 0.0 };
+			ecef2enu(lat2, diffxyz, diffenu);
+
+			fprintf(fpdiff, "%10.3f,%14.9f,%14.9f,%7.3f,%7.3f,%7.3f,%7.3f,%10.4f,%10.4f,%10.4f,", gpstow_sol,
+				sol_pva.lat, sol_pva.lon, sol_pva.hgt,
+				sol_pva.vn, sol_pva.ve, sol_pva.vu,
+				sol_pva.roll, sol_pva.pitch, sol_pva.azimuth);
+
+			fprintf(fpdiff, "%14.9f,%14.9f,%7.3f,%7.3f,%7.3f,%7.3f,%10.4f,%10.4f,%10.4f,",
+				span_pva.lat, span_pva.lon, span_pva.hgt,
+				span_pva.vn, span_pva.ve, span_pva.vu,
+				span_pva.roll, span_pva.pitch, span_pva.azimuth);
+
+			fprintf(fpdiff, "%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f,%7.3f\n",
+				diffenu[1], diffenu[0], diffenu[2],
 				sol_pva.vn - span_pva.vn, sol_pva.ve - span_pva.ve, sol_pva.vu - span_pva.vu,
 				sol_pva.roll - span_pva.roll, sol_pva.pitch - span_pva.pitch, sol_pva.azimuth - span_pva.azimuth);
 		}
@@ -822,22 +953,17 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	decode_span("C:\\Users\\da\\Documents\\346\\1\\novatel_CPT7-2019_12_12_15_52_00.ASC", SPAN_CPT7, 100.0, 0);
+	char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
+	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";
+	//decode_span("C:\\Users\\da\\Documents\\346\\1\\novatel_CPT7-2019_12_12_15_52_00.ASC", SPAN_CPT7, 100.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
 	//decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
 	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
+
+	diff_with_span(fname1, fname2);
+	diff_with_span_rtk(fname1, fname2);
+
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
