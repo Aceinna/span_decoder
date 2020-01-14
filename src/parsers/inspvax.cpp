@@ -66,6 +66,7 @@ novatel_gps_driver::InspvaxParser::ParseBinary(const novatel_gps_driver::BinaryM
     error << "Unknown solution status: " << solution_status;
     throw ParseException(error.str());
   }
+  ros_msg->ins_status_int = solution_status;
   ros_msg->ins_status = SOLUTION_STATUSES[solution_status];
   uint16_t pos_type = ParseUInt16(&bin_msg.data_[4]);
   if (pos_type > MAX_POSITION_TYPE)
@@ -74,6 +75,7 @@ novatel_gps_driver::InspvaxParser::ParseBinary(const novatel_gps_driver::BinaryM
     error << "Unknown position type: " << pos_type;
     throw ParseException(error.str());
   }
+  ros_msg->position_type_int = pos_type;
   ros_msg->position_type = POSITION_TYPES[pos_type];  
   
   

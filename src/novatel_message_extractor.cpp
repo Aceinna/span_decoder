@@ -58,6 +58,8 @@ namespace novatel_gps_driver
 
   const std::string NovatelMessageExtractor::NOVATEL_ASCII_FLAGS = "%$#";  //xu_zhengpeng
   const std::string NovatelMessageExtractor::NOVATEL_BINARY_SYNC_BYTES = "\xAA\x44\x12";
+  const std::string NovatelMessageExtractor::NOVATEL_BINARY_SYNC_BYTES_1 = "\xAA\x44";
+  const std::string NovatelMessageExtractor::NOVATEL_BINARY_SYNC_BYTES_SHORT = "\xAA\x44\x13";
   const std::string NovatelMessageExtractor::NOVATEL_ENDLINE = "\r\n";
   
   uint32_t NovatelMessageExtractor::CRC32Value(int32_t i)
@@ -152,26 +154,29 @@ namespace novatel_gps_driver
                            size_t start_idx,
                            BinaryMessage& msg)
   {
-    if (str.length() < HeaderParser::BINARY_HEADER_LENGTH + 4)
+    if ((str.length()- start_idx) < HeaderParser::BINARY_HEADER_LENGTH + 4)
     {
       // The shortest a binary message can be (header + no data + CRC)
       // is 32 bytes, so just return if we don't have at least that many.
-		std::cout << ("Binary message was too short to parse.") << std::endl;
+		//std::cout << ("Binary message was too short to parse.") << std::endl;
       return -1;
     }
 
-    std::cout << ("Reading binary header.") << std::endl;
+   // std::cout << ("Reading binary header.") << std::endl;
     msg.header_.ParseHeader(reinterpret_cast<const uint8_t*>(&str[start_idx]));
-	if (msg.header_.message_id_ == 42)
-	{
-		int a = 1;
-	}
-    auto data_start = static_cast<uint16_t>(msg.header_.header_length_ + start_idx);
+
+    auto data_start = static_cast<uint32_t>(msg.header_.header_length_ + start_idx);
     uint16_t data_length = msg.header_.message_length_;
+	if (data_length > 200 && msg.header_.message_id_ != 140 && msg.header_.message_id_ != 1336
+		&& msg.header_.message_id_ != 1945)
+	{
+		return -2;
+	}
 
     if (msg.header_.sync0_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[0]) ||
         msg.header_.sync1_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[1]) ||
-        msg.header_.sync2_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[2]))
+        (msg.header_.sync2_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[2])
+		&&msg.header_.sync2_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES_SHORT[2])))
     {
       //ROS_ERROR("Sync bytes were incorrect; this should never happen and is definitely a bug: %x %x %x",
              //  msg.header_.sync0_, msg.header_.sync1_, msg.header_.sync2_);
@@ -186,6 +191,18 @@ namespace novatel_gps_driver
 
     //ROS_DEBUG("Msg ID: %u    Data start / length: %u / %u",
              // msg.header_.message_id_, data_start, data_length);
+
+	if (msg.header_.message_id_ == 1247)
+	{
+		if (data_start + data_length > str.length())
+		{
+			return -1;
+		}
+		else
+		{
+			return static_cast<int32_t>(msg.header_.header_length_ + data_length);
+		}
+	}
 
     if (data_start + data_length + 4 > str.length())
     {
@@ -385,24 +402,50 @@ namespace novatel_gps_driver
       size_t ascii_start_idx;
       size_t ascii_end_idx ;
       size_t invalid_ascii_idx ;
-      size_t binary_start_idx = input.find(NOVATEL_BINARY_SYNC_BYTES, sentence_start);
-
-      FindAsciiSentence(input, sentence_start, ascii_start_idx, ascii_end_idx, invalid_ascii_idx);
+	  size_t binary_start_idx = std::string::npos;
+      size_t binary_start_idx1 = input.find(NOVATEL_BINARY_SYNC_BYTES, sentence_start);
+	  size_t binary_start_idx2 = input.find(NOVATEL_BINARY_SYNC_BYTES_SHORT, sentence_start);
+	  if (binary_start_idx1 == std::string::npos && binary_start_idx2 == std::string::npos)
+	  {
+		  binary_start_idx = std::string::npos;
+	  }
+	  else if (binary_start_idx1 != std::string::npos && binary_start_idx2 == std::string::npos)
+	  {
+		  binary_start_idx = binary_start_idx1;
+	  }
+	  else if (binary_start_idx2 != std::string::npos && binary_start_idx1 == std::string::npos)
+	  {
+		  binary_start_idx = binary_start_idx2;
+	  }
+	  else if (binary_start_idx2 != std::string::npos && binary_start_idx1 != std::string::npos)
+	  {
+		  binary_start_idx = binary_start_idx2 > binary_start_idx1? binary_start_idx1: binary_start_idx2;
+	  }
+      //FindAsciiSentence(input, sentence_start, ascii_start_idx, ascii_end_idx, invalid_ascii_idx);
 
     //  ROS_DEBUG("Binary start: %lu   ASCII start / end / invalid: %lu / %lu / %lu",
                 //binary_start_idx, ascii_start_idx, ascii_end_idx, invalid_ascii_idx);
 
 	 // ascii_start_idx = std::string::npos;
 	 // ascii_end_idx = std::string::npos;
-      if (binary_start_idx == std::string::npos && ascii_start_idx == std::string::npos)
+     //if (binary_start_idx == std::string::npos && ascii_start_idx == std::string::npos)
+      if (binary_start_idx == std::string::npos)
       {
         // If we don't see either a binary or an ASCII message, just give up.
-		  remaining = remaining +input;
+		  if (sentence_start == 0)
+		  {
+			  remaining = input;
+		  }
+		  else
+		  {
+			  remaining = input.substr(sentence_start);
+		  }
           break;
       }
 
-      if (ascii_start_idx == std::string::npos ||
-          (binary_start_idx != std::string::npos && binary_start_idx < ascii_start_idx))
+      //if (ascii_start_idx == std::string::npos ||
+      //    (binary_start_idx != std::string::npos && binary_start_idx < ascii_start_idx))
+	  if (binary_start_idx != std::string::npos )
       {
         // If we see a binary header or if there's both a binary and ASCII header but
         // the binary one comes first, try to parse it.
@@ -429,6 +472,7 @@ namespace novatel_gps_driver
           parse_error = true;
         }
       }
+	  /*
       else
       {
         // If we saw the beginning of an ASCII message, try to parse it.
@@ -525,6 +569,7 @@ namespace novatel_gps_driver
           break;
         }
       }
+	  */
     }
 
     return !parse_error;

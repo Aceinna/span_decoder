@@ -78,6 +78,42 @@
     <ClInclude Include="include\msg\signalmark.h">
       <Filter>include\msg</Filter>
     </ClInclude>
+    <ClInclude Include="receiverstatus.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\messageheader.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="rtklib\rtklib.h">
+      <Filter>rtklib</Filter>
+    </ClInclude>
+    <ClInclude Include="common\base.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="include\binary_header.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\binary_message.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\file.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\nmea_sentence.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_gps.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_message_extractor.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\novatel_sentence.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rtktime.h">
+      <Filter>include</Filter>
+    </ClInclude>
     <ClInclude Include="include\parsers\bestpos.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
@@ -144,113 +180,23 @@
     <ClInclude Include="include\parsers\range.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
-    <ClInclude Include="include\parsers\time.h">
-      <Filter>include\parsers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\parsers\trackstat.h">
-      <Filter>include\parsers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\binary_header.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\binary_message.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\nmea_sentence.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\novatel_gps.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\novatel_message_extractor.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\novatel_sentence.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="receiverstatus.h">
-      <Filter>include\msg</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\messageheader.h">
-      <Filter>include\msg</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\bestpos.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\channeltrackingstatus.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\clocksteering.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\correctedimudata.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\dualantennaheading.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\gpgsa.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\gpgsv.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\gphdt.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\inscov.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\inspva.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\insstdev.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\msgs.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\range.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\satellite.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\time.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\trackstatchannel.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\trackstat.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\utmposition.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\velocity.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\msg\xyz.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="include\parsers\rangecmp.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\parsers\shortheader.h">
-      <Filter>include\parsers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\parsers\rawimusx.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
     <ClInclude Include="include\parsers\rawimu.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
-    <ClInclude Include="rtklib\rtklib.h">
-      <Filter>rtklib</Filter>
+    <ClInclude Include="include\parsers\rawimusx.h">
+      <Filter>include\parsers</Filter>
     </ClInclude>
-    <ClInclude Include="common\base.h">
-      <Filter>common</Filter>
+    <ClInclude Include="include\parsers\shortheader.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\time.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\trackstat.h">
+      <Filter>include\parsers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -346,6 +292,12 @@
     </ClCompile>
     <ClCompile Include="rtklib\rtklib.cpp">
       <Filter>rtklib</Filter>
+    </ClCompile>
+    <ClCompile Include="src\file.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rtktime.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

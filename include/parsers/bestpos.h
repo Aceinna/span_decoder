@@ -48,7 +48,7 @@ namespace novatel_gps_driver
 
     novatel_gps_msgs::BestPosPtr ParseAscii(const NovatelSentence& sentence) noexcept(false) override;
 
-    static constexpr uint16_t MESSAGE_ID = 42;  //xu_zhengpeng
+    static constexpr uint16_t MESSAGE_ID = 1429;  //xu_zhengpeng gnss  42
     static constexpr size_t BINARY_LENGTH = 72;
     static constexpr size_t ASCII_LENGTH = 21;
     static const std::string MESSAGE_NAME;

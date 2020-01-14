@@ -71,7 +71,7 @@ novatel_gps_driver::InspvaParser::ParseBinary(const novatel_gps_driver::BinaryMe
   ros_msg->pitch = ParseDouble(&bin_msg.data_[68]);
   ros_msg->azimuth = ParseDouble(&bin_msg.data_[76]);
   uint32_t status = ParseUInt32(&bin_msg.data_[84]);
-
+  ros_msg->status_int = status;
   switch (status)
   {
     case 0:

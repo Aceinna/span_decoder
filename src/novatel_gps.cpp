@@ -34,6 +34,8 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/make_shared.hpp>
 
+#include "include/file.h"
+
 
 
 namespace novatel_gps_driver
@@ -105,6 +107,10 @@ namespace novatel_gps_driver
         error_msg_ = "Parse failure extracting sentences.";
       }
 
+	  //if (remaining_buffer.size() > 1000)
+	  //{
+		 // remaining_buffer.clear();
+	  //}
       nmea_buffer_ = remaining_buffer;
 
       //ROS_DEBUG("Parsed: %lu NMEA / %lu NovAtel / %lu Binary messages",
@@ -355,10 +361,19 @@ namespace novatel_gps_driver
       case BestposParser::MESSAGE_ID:
       {
         novatel_gps_msgs::BestPosPtr position = bestpos_parser_.ParseBinary(msg);
-        novatel_positions_.push_back(position);
+		tracegnss(position);
+       // novatel_positions_.push_back(position);  /new
         //position_sync_buffer_.push_back(position);
         break;
       }
+	  case 42:
+	  {
+		  novatel_gps_msgs::BestPosPtr position = bestpos_parser_.ParseBinary(msg);
+		  tracegnss(position);
+		  // novatel_positions_.push_back(position);  /new
+		   //position_sync_buffer_.push_back(position);
+		  break;
+	  }
       case BestxyzParser::MESSAGE_ID:
       {
         novatel_gps_msgs::XYZPtr xyz_position = bestxyz_parser_.ParseBinary(msg);
@@ -374,7 +389,8 @@ namespace novatel_gps_driver
       case BestvelParser::MESSAGE_ID:
       {
         novatel_gps_msgs::VelocityPtr velocity = bestvel_parser_.ParseBinary(msg);
-        novatel_velocities_.push_back(velocity);
+		tracegnssvel(velocity);
+        //novatel_velocities_.push_back(velocity);
         break;
       }
       case Heading2Parser::MESSAGE_ID:
@@ -412,20 +428,22 @@ namespace novatel_gps_driver
       case InspvaParser::MESSAGE_ID:
       {
         novatel_gps_msgs::InspvaPtr inspva = inspva_parser_.ParseBinary(msg);
-        inspva_msgs_.push_back(inspva);
-        inspva_queue_.push(inspva);
-        if (inspva_queue_.size() > MAX_BUFFER_SIZE)
-        {
-         // ROS_WARN_THROTTLE(1.0, "INSPVA queue overflow.");
-          inspva_queue_.pop();
-        }
+		traceins(inspva);
+        //inspva_msgs_.push_back(inspva);
+        //inspva_queue_.push(inspva);
+        //if (inspva_queue_.size() > MAX_BUFFER_SIZE)
+        //{
+        // // ROS_WARN_THROTTLE(1.0, "INSPVA queue overflow.");
+        //  inspva_queue_.pop();
+        //}
         //GenerateImuMessages();
         break;
       }
       case InspvaxParser::MESSAGE_ID:
       {
         novatel_gps_msgs::InspvaxPtr inspvax = inspvax_parser_.ParseBinary(msg);
-        inspvax_msgs_.push_back(inspvax);
+		traceinspvax(inspvax);
+        //inspvax_msgs_.push_back(inspvax);  /new
         break;
       }
       case InsstdevParser::MESSAGE_ID:
@@ -458,7 +476,15 @@ namespace novatel_gps_driver
 	  case RawimuParser::MESSAGE_ID:
 	  {
 		  novatel_gps_msgs::RawimuPtr rawimu = rawimu_parser_.ParseBinary(msg);
-		  rawimu_msgs_.push_back(rawimu);
+		  traceimu(rawimu);
+		  //rawimu_msgs_.push_back(rawimu);
+		  break;
+	  }
+	  case RawimusxParser::MESSAGE_ID:
+	  {
+		  novatel_gps_msgs::RawimusxPtr rawimusx = rawimusx_parser_.ParseBinary(msg);
+		  tracenovatelimu(rawimusx);  //new
+		  //rawimusx_msgs_.push_back(rawimusx);
 		  break;
 	  }
       default:

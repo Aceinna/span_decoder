@@ -74,6 +74,7 @@ namespace novatel_gps_driver
       error << "Unknown solution status: " << solution_status;
       throw ParseException(error.str());
     }
+	ros_msg->solution_status_int = solution_status;
     ros_msg->solution_status = SOLUTION_STATUSES[solution_status];
     uint16_t pos_type = ParseUInt16(&bin_msg.data_[4]);
     if (pos_type > MAX_POSITION_TYPE)
@@ -82,6 +83,7 @@ namespace novatel_gps_driver
       error << "Unknown position type: " << pos_type;
       throw ParseException(error.str());
     }
+	ros_msg->position_type_int = pos_type;
     ros_msg->position_type = POSITION_TYPES[pos_type];
     ros_msg->lat = ParseDouble(&bin_msg.data_[8]);
     ros_msg->lon = ParseDouble(&bin_msg.data_[16]);

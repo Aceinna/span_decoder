@@ -75,6 +75,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>./;./common;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>./;./common;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -108,10 +111,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>.\boost</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>.\boost\lib32-msvc-14.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,41 +137,22 @@
     <ClInclude Include="common\base.h" />
     <ClInclude Include="include\binary_header.h" />
     <ClInclude Include="include\binary_message.h" />
-    <ClInclude Include="include\msg\bestpos.h" />
+    <ClInclude Include="include\file.h" />
     <ClInclude Include="include\msg\bestgnssvel.h" />
     <ClInclude Include="include\msg\bestvel.h" />
-    <ClInclude Include="include\msg\channeltrackingstatus.h" />
-    <ClInclude Include="include\msg\clocksteering.h" />
-    <ClInclude Include="include\msg\correctedimudata.h" />
-    <ClInclude Include="include\msg\dualantennaheading.h" />
     <ClInclude Include="include\msg\extendedsolutionstatus.h" />
     <ClInclude Include="include\msg\gpgga.h" />
-    <ClInclude Include="include\msg\gpgsa.h" />
-    <ClInclude Include="include\msg\gpgsv.h" />
-    <ClInclude Include="include\msg\gphdt.h" />
     <ClInclude Include="include\msg\gprmc.h" />
-    <ClInclude Include="include\msg\inscov.h" />
-    <ClInclude Include="include\msg\inspva.h" />
-    <ClInclude Include="include\msg\insstdev.h" />
     <ClInclude Include="include\msg\messageheader.h" />
     <ClInclude Include="include\msg\heading2.h" />
     <ClInclude Include="include\msg\inspvax.h" />
-    <ClInclude Include="include\msg\msgs.h" />
-    <ClInclude Include="include\msg\range.h" />
     <ClInclude Include="include\msg\rangecmp.h" />
     <ClInclude Include="include\msg\rangeinformation.h" />
     <ClInclude Include="include\msg\rawimu.h" />
     <ClInclude Include="include\msg\rawimusx.h" />
     <ClInclude Include="include\msg\rtkpos.h" />
     <ClInclude Include="include\msg\rtkvel.h" />
-    <ClInclude Include="include\msg\satellite.h" />
     <ClInclude Include="include\msg\signalmark.h" />
-    <ClInclude Include="include\msg\time.h" />
-    <ClInclude Include="include\msg\trackstatchannel.h" />
-    <ClInclude Include="include\msg\trackstat.h" />
-    <ClInclude Include="include\msg\utmposition.h" />
-    <ClInclude Include="include\msg\velocity.h" />
-    <ClInclude Include="include\msg\xyz.h" />
     <ClInclude Include="include\nmea_sentence.h" />
     <ClInclude Include="include\novatel_gps.h" />
     <ClInclude Include="include\novatel_message_extractor.h" />
@@ -199,12 +185,14 @@
     <ClInclude Include="include\parsers\shortheader.h" />
     <ClInclude Include="include\parsers\time.h" />
     <ClInclude Include="include\parsers\trackstat.h" />
+    <ClInclude Include="include\rtktime.h" />
     <ClInclude Include="receiverstatus.h" />
     <ClInclude Include="rtklib\rtklib.h" />
     <ClInclude Include="swri_util\string_util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="rtklib\rtklib.cpp" />
+    <ClCompile Include="src\file.cpp" />
     <ClCompile Include="src\novatel_gps.cpp" />
     <ClCompile Include="src\novatel_message_extractor.cpp" />
     <ClCompile Include="src\parsers\bestpos.cpp" />
@@ -233,6 +221,7 @@
     <ClCompile Include="src\parsers\shortheader.cpp" />
     <ClCompile Include="src\parsers\time.cpp" />
     <ClCompile Include="src\parsers\trackstat.cpp" />
+    <ClCompile Include="src\rtktime.cpp" />
     <ClCompile Include="src\span_decoder.cpp" />
     <ClCompile Include="swri_util\string_util.cpp" />
   </ItemGroup>

@@ -30,6 +30,7 @@
 #include <include/parsers/rawimusx.h>
 #include <boost/make_shared.hpp>
 #include <include/parsers/shortheader.h>
+
 #include <iostream>
 #include <sstream>
 
@@ -48,61 +49,28 @@ const std::string novatel_gps_driver::RawimusxParser::GetMessageName() const
 novatel_gps_msgs::RawimusxPtr
 novatel_gps_driver::RawimusxParser::ParseBinary(const novatel_gps_driver::BinaryMessage& bin_msg) noexcept(false)
 {
-  //if (bin_msg.data_.size() != BINARY_LENGTH)
-  //{
-  //  std::stringstream error;
-  //  error << "Unexpected inspvax message size: " << bin_msg.data_.size();
-  //  throw ParseException(error.str());
-  //}
+  if (bin_msg.data_.size() != BINARY_LENGTH)
+  {
+    std::stringstream error;
+    error << "Unexpected inspvax message size: " << bin_msg.data_.size();
+    throw ParseException(error.str());
+  }
     novatel_gps_msgs::RawimusxPtr ros_msg = boost::make_shared<novatel_gps_msgs::Rawimusx>();
-  //HeaderParser h_parser;
-  //ros_msg->novatel_msg_header = h_parser.ParseBinary(bin_msg);
-  //ros_msg->novatel_msg_header.message_name = GetMessageName();
+	ShortHeaderParser h_parser;
+    ros_msg->novatel_msg_header = h_parser.ParseBinary(bin_msg);
+    ros_msg->novatel_msg_header.message_name = GetMessageName();
 
-  //uint16_t solution_status = ParseUInt16(&bin_msg.data_[0]);
-  //if (solution_status > MAX_SOLUTION_STATUS)
-  //{
-  //  std::stringstream error;
-  //  error << "Unknown solution status: " << solution_status;
-  //  throw ParseException(error.str());
-  //}
-  //ros_msg->ins_status = SOLUTION_STATUSES[solution_status];
-  //uint16_t pos_type = ParseUInt16(&bin_msg.data_[4]);
-  //if (pos_type > MAX_POSITION_TYPE)
-  //{
-  //  std::stringstream error;
-  //  error << "Unknown position type: " << pos_type;
-  //  throw ParseException(error.str());
-  //}
-  //ros_msg->position_type = POSITION_TYPES[pos_type];  
-  //
-  //
-  //
-  //ros_msg->latitude = ParseDouble(&bin_msg.data_[8]);
-  //ros_msg->longitude = ParseDouble(&bin_msg.data_[16]);
-  //ros_msg->altitude = ParseDouble(&bin_msg.data_[24]);
-  //ros_msg->undulation = ParseFloat(&bin_msg.data_[32]);
-  //ros_msg->north_velocity = ParseDouble(&bin_msg.data_[36]);
-  //ros_msg->east_velocity = ParseDouble(&bin_msg.data_[44]);
-  //ros_msg->up_velocity = ParseDouble(&bin_msg.data_[52]);
-  //ros_msg->roll = ParseDouble(&bin_msg.data_[60]);
-  //ros_msg->pitch = ParseDouble(&bin_msg.data_[68]);
-  //ros_msg->azimuth = ParseDouble(&bin_msg.data_[76]);
-
-  //ros_msg->latitude_std = ParseFloat(&bin_msg.data_[84]);
-  //ros_msg->longitude_std = ParseFloat(&bin_msg.data_[88]);
-  //ros_msg->altitude_std = ParseFloat(&bin_msg.data_[92]);  
-
-  //ros_msg->north_velocity_std = ParseFloat(&bin_msg.data_[96]);
-  //ros_msg->east_velocity_std = ParseFloat(&bin_msg.data_[100]);
-  //ros_msg->up_velocity_std = ParseFloat(&bin_msg.data_[104]);
-
-  //ros_msg->roll_std = ParseFloat(&bin_msg.data_[108]);
-  //ros_msg->pitch_std = ParseFloat(&bin_msg.data_[112]);
-  //ros_msg->azimuth_std = ParseFloat(&bin_msg.data_[116]);
-  //GetExtendedSolutionStatusMessage(bin_msg.data_[120],
-  //                                   ros_msg->extended_status);
-  //ros_msg->seconds_since_update = ParseUInt16(&bin_msg.data_[124]);
+	ros_msg->imuinfo =bin_msg.data_[0];
+	ros_msg->imutype = bin_msg.data_[1];
+	ros_msg->gps_week_num = ParseUInt16(&bin_msg.data_[2]);
+	ros_msg->gps_seconds = ParseDouble(&bin_msg.data_[4]);
+	ros_msg->IMUStatus = ParseUInt32(&bin_msg.data_[12]);
+	ros_msg->z_accel = ParseInt32(&bin_msg.data_[16]);
+	ros_msg->y_accel = ParseInt32(&bin_msg.data_[20]);
+	ros_msg->x_accel = ParseInt32(&bin_msg.data_[24]);
+	ros_msg->z_gyro = ParseInt32(&bin_msg.data_[28]);
+	ros_msg->y_gyro = ParseInt32(&bin_msg.data_[32]);
+	ros_msg->x_gyro = ParseInt32(&bin_msg.data_[36]);
 
   return ros_msg;
 }

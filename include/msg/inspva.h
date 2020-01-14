@@ -31,7 +31,7 @@ namespace novatel_gps_msgs
 		float64 roll;
 		float64 pitch;
 		float64 azimuth;
-
+		uint32 status_int;
 		std::string  status;
 	}INSPVA;
 	typedef boost::shared_ptr< novatel_gps_msgs::Inspva > InspvaPtr;

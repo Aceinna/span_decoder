@@ -46,7 +46,7 @@ namespace novatel_gps_driver
 
     novatel_gps_msgs::RawimusxPtr ParseAscii(const NovatelSentence& sentence) noexcept(false) override;
 
-    static constexpr uint16_t MESSAGE_ID = 1692;
+    static constexpr uint16_t MESSAGE_ID = 1462;
     static constexpr size_t BINARY_LENGTH = 40;
     static constexpr size_t ASCII_FIELDS = 11;
     static const std::string MESSAGE_NAME;

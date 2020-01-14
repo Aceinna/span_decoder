@@ -16,8 +16,10 @@ namespace novatel_gps_msgs
 
 		MessageHeader novatel_msg_header;
 
+		uint16 ins_status_int;
 		std::string ins_status;
 
+		uint16 position_type_int;
 		std::string position_type;
 
 		float64 latitude;
