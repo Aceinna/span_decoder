@@ -4,6 +4,10 @@
 #include <iostream>
 
 #include "kml.h"
+#include "dirent.h"
+
+#include <vector>
+#include <string>
 
 #include "minizipdll.h"
 #pragma comment(lib,"MINIZIPDLL.lib")
@@ -292,6 +296,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	FILE* fins = NULL;
 	FILE* fkml = NULL;
 	FILE* fhdg = NULL;
+	FILE* fGGA_INS = NULL;
 
 	char fileName[255] = { 0 };
 	char outfilename[255] = { 0 };
@@ -303,8 +308,9 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	char* result1 = strrchr(fileName, '.');
 	if (result1 != NULL) result1[0] = '\0';
 
-	sprintf(outfilename, "%s.gga", fileName); fgga = fopen(outfilename, "w");
-	sprintf(outfilename, "%s-gps.bin", fileName); fgps = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-gps.nmea", fileName); fgga = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-ins.nmea", fileName); fGGA_INS = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-gps.csv", fileName); fgps = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-pos.csv", fileName); fpos = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-imu.csv", fileName); fimu = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-ins.csv", fileName); fins = fopen(outfilename, "w");
@@ -440,7 +446,10 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			}
 			else if (sensor == SPAN_FLEX6)
 			{
-
+				double aa = P2_29;
+				double bb = 2 << 29;
+				int i = 0;
+				/* 0.05 x 2-15, 0.1x 2-8 arcsec/LSB*/
 			}
 			else if (sensor == SPAN_ACEINNA)
 			{
@@ -513,6 +522,14 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 #ifndef GNSS_ONLY
 			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
 #endif			
+
+			if (fGGA_INS)
+			{
+				gtime_t gt = gpst2time(wn, ws);
+				char gga[256] = { 0 };
+				print_nmea_gga(gt, blh, 10, 4, 1.0, 0.0, gga);
+				fprintf(fGGA_INS, "%s", gga);
+			}
 			continue;
 		}
 		if (strstr(val[0], "INSPVASA") != NULL)
@@ -565,6 +582,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 
 	if (fdat != NULL) fclose(fdat);
 	if (fgga != NULL) fclose(fgga);
+	if (fGGA_INS != NULL) fclose(fGGA_INS);
 	if (fpos != NULL) fclose(fpos);
 	if (fgps != NULL) fclose(fgps);
 	if (fimu != NULL) fclose(fimu);
@@ -582,6 +600,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			}
 			strcpy(paras[0], "./minizipdll");
 			sprintf(paras[1], "%s.kmz", fileName);
+			remove(paras[1]);
 			strcpy(paras[2], out_kml_fpath);
 
 			minizip(3, paras);
@@ -951,6 +970,39 @@ bool diff_with_span_rtk(const char* fname_sol, const char* fname_span)
 	return true;
 }
 
+void decode_span_dirctory(const char* dirname, const char* fExt, int format, int sampleRate, int isKML)
+{
+	std::vector<std::string> vFileName;
+	char imufname[512] = { 0 };
+	DIR* dir;
+	struct dirent* dp;
+	dir = opendir(dirname);
+	while ((dp = readdir(dir)) != NULL) {
+		//printf("debug: %s\n", dp->d_name);
+		if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+		{
+			// do nothing (straight logic)
+		}
+		else {
+			sprintf(imufname, "%s%s", dirname, dp->d_name);
+			for (int i = 0; i < strlen(imufname); ++i)
+			{
+				imufname[i] = tolower(imufname[i]);
+			}
+			if (strstr(imufname, fExt) != NULL && std::find(vFileName.begin(), vFileName.end(), std::string(imufname)) == vFileName.end())
+			{
+				vFileName.push_back(std::string(imufname));
+			}
+		}
+	}
+	closedir(dir);
+	for (std::vector<std::string>::iterator pFileName = vFileName.begin(); pFileName != vFileName.end(); ++pFileName)
+	{
+		decode_span(pFileName->c_str(), format, sampleRate, isKML);
+	}
+	return;
+}
+
 int main()
 {
 	char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
@@ -963,7 +1015,8 @@ int main()
 	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
 	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
 
-	diff_with_span(fname1, fname2);
-	diff_with_span_rtk(fname1, fname2);
+	//diff_with_span(fname1, fname2);
+	//diff_with_span_rtk(fname1, fname2);
 
+	decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
 }

@@ -153,10 +153,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dirent.c" />
     <ClCompile Include="kml.cpp" />
     <ClCompile Include="span_decoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dirent.h" />
     <ClInclude Include="kml.h" />
     <ClInclude Include="minizipdll.h" />
   </ItemGroup>
