@@ -41,6 +41,214 @@
 
 #define CPT_GYRO   6.670106611340576E-09  /* 2^-33 * 180 /PI */
 
+#define MAXLEAPS    64                  /* max number of leap seconds table */
+const static double gpst0[] = { 1980,1,6,0,0,0 }; /* gps time reference */
+static double leaps[MAXLEAPS + 1][7] = { /* leap seconds (y,m,d,h,m,s,utc-gpst) */
+	{2017,1,1,0,0,0,-18},
+	{2015,7,1,0,0,0,-17},
+	{2012,7,1,0,0,0,-16},
+	{2009,1,1,0,0,0,-15},
+	{2006,1,1,0,0,0,-14},
+	{1999,1,1,0,0,0,-13},
+	{1997,7,1,0,0,0,-12},
+	{1996,1,1,0,0,0,-11},
+	{1994,7,1,0,0,0,-10},
+	{1993,7,1,0,0,0, -9},
+	{1992,7,1,0,0,0, -8},
+	{1991,1,1,0,0,0, -7},
+	{1990,1,1,0,0,0, -6},
+	{1988,1,1,0,0,0, -5},
+	{1985,7,1,0,0,0, -4},
+	{1983,7,1,0,0,0, -3},
+	{1982,7,1,0,0,0, -2},
+	{1981,7,1,0,0,0, -1},
+	{0}
+};
+static  gtime_t timeadd(gtime_t t, double sec)
+{
+	double tt;
+
+	t.sec += sec; tt = floor(t.sec); t.time += (int)tt; t.sec -= tt;
+	return t;
+}
+static void time2epoch(gtime_t t, double *ep)
+{
+	const int mday[] = { /* # of days in a month */
+		31,28,31,30,31,30,31,31,30,31,30,31,31,28,31,30,31,30,31,31,30,31,30,31,
+		31,29,31,30,31,30,31,31,30,31,30,31,31,28,31,30,31,30,31,31,30,31,30,31
+	};
+	int days, sec, mon, day;
+
+	/* leap year if year%4==0 in 1901-2099 */
+	days = (int)(t.time / 86400);
+	sec = (int)(t.time - (time_t)days * 86400);
+	for (day = days % 1461, mon = 0; mon < 48; mon++) {
+		if (day >= mday[mon]) day -= mday[mon]; else break;
+	}
+	ep[0] = 1970 + days / 1461 * 4 + mon / 12; ep[1] = mon % 12 + 1; ep[2] = day + 1;
+	ep[3] = sec / 3600; ep[4] = sec % 3600 / 60; ep[5] = sec % 60 + t.sec;
+}
+static gtime_t epoch2time(const double *ep)
+{
+	const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
+	gtime_t time = { 0 };
+	int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+	if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+
+	/* leap year if year%4==0 in 1901-2099 */
+	days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+	sec = (int)floor(ep[5]);
+	time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+	time.sec = ep[5] - sec;
+	return time;
+}
+static gtime_t gpst2time(int week, double sec)
+{
+	gtime_t t = epoch2time(gpst0);
+
+	if (sec < -1E9 || 1E9 < sec) sec = 0.0;
+	t.time += 86400 * 7 * week + (int)sec;
+	t.sec = sec - (int)sec;
+	return t;
+}
+static gtime_t gpst2utc(gtime_t t)
+{
+	gtime_t tu;
+
+	////for (i = 0; leaps[i][0] > 0; i++) {
+	   //// tu = timeadd(t, leaps[i][6]);
+	   //// if (timediff(tu, epoch2time(leaps[i])) >= 0.0) return tu;
+	////}
+	tu = timeadd(t, leaps[0][6]);
+	return tu;
+}
+static void  DegtoDMS(const double mdeg, int* Deg, int* Min, double* Sec)
+{
+	double AM;
+	*Deg = (int)mdeg;
+	AM = (mdeg - *Deg) * 60.0;
+	*Min = (int)AM;
+	*Sec = (AM - *Min) * 60.0;
+}
+
+static void deg2dms(double deg, double* dms)
+{
+	double sign = deg < 0.0 ? -1.0 : 1.0, a = fabs(deg);
+	dms[0] = floor(a); a = (a - dms[0]) * 60.0;
+	dms[1] = floor(a); a = (a - dms[1]) * 60.0;
+	dms[2] = a; dms[0] *= sign;
+}
+/* output solution in the form of nmea GGA sentence --------------------------*/
+static int outnmea_gga(unsigned char* buff, double time, int type, double* blh, int ns, double dop, double age)
+{
+	double h, ep[6], dms1[3], dms2[3];
+	char* p = (char*)buff, *q, sum;
+
+	if (type != 1 && type != 4 && type != 5) {
+		p += sprintf_s(p, 255, "$GPGGA,,,,,,,,,,,,,,");
+		for (q = (char*)buff + 1, sum = 0; *q; q++) sum ^= *q;
+		p += sprintf_s(p, 255, "*%02X%c%c", sum, 0x0D, 0x0A);
+		return p - (char*)buff;
+	}
+	time -= 18.0;
+	ep[2] = floor(time / (24 * 3600));
+	time -= ep[2] * 24 * 3600.0;
+	ep[3] = floor(time / 3600);
+	time -= ep[3] * 3600;
+	ep[4] = floor(time / 60);
+	time -= ep[4] * 60;
+	ep[5] = time;
+	h = 0.0;
+	deg2dms(fabs(blh[0]) * 180.0 / PI, dms1);
+	deg2dms(fabs(blh[1]) * 180.0 / PI, dms2);
+	p += sprintf_s(p, 255, "$GPGGA,%02.0f%02.0f%05.2f,%02.0f%010.7f,%s,%03.0f%010.7f,%s,%d,%02d,%.1f,%.3f,M,%.3f,M,%.1f,",
+		ep[3], ep[4], ep[5], dms1[0], dms1[1] + dms1[2] / 60.0, blh[0] >= 0 ? "N" : "S",
+		dms2[0], dms2[1] + dms2[2] / 60.0, blh[1] >= 0 ? "E" : "W", type,
+		ns, dop, blh[2] - h, h, age);
+	for (q = (char*)buff + 1, sum = 0; *q; q++) sum ^= *q; /* check-sum */
+	p += sprintf_s(p, 255, "*%02X%c%c", sum, 0x0D, 0x0A);
+	return p - (char*)buff;
+}
+
+
+static void euler2dcm(const double eular[3], double dc[3][3])
+{
+	double roll = eular[0];
+	double  pitch = eular[1];
+	double  heading = eular[2];
+	double  cr, cp, ch, sr, sp, sh;
+	cr = cos(roll); cp = cos(pitch); ch = cos(heading);
+	sr = sin(roll); sp = sin(pitch); sh = sin(heading);
+
+	dc[0][0] = cp * ch;
+	dc[0][1] = -cr * sh + sr * sp*ch;
+	dc[0][2] = sr * sh + cr * sp*ch;
+
+	dc[1][0] = cp * sh;
+	dc[1][1] = cr * ch + sr * sp*sh;
+	dc[1][2] = -sr * ch + cr * sp * sh;
+
+	dc[2][0] = -sp;
+	dc[2][1] = sr * cp;
+	dc[2][2] = cr * cp;
+}
+
+static uint8_t MatrixMutiply(const double *matrix_a, const double *matrix_b, const int matrix_a_row, const int matrix_a_column, const int matrix_b_column, double *matrix_result)
+{
+	double sum = 0;
+	double median = 0;
+	for (int i = 0; i < matrix_a_row; i++)
+	{
+		for (int k = 0; k < matrix_b_column; k++)
+		{
+			for (int j = 0; j < matrix_a_column; j++)
+			{
+				median = matrix_a[matrix_a_column*i + j] * matrix_b[matrix_b_column*j + k];
+				sum = sum + median;
+			}
+			matrix_result[matrix_b_column*i + k] = sum;
+			sum = 0;
+		}
+	}
+	return 1;
+
+}
+
+uint8_t MatrixAdd(const double *matrix_a, const double *matrix_b, const int matrix_a_row, const int matrix_a_colume, double *matrix_result)
+{
+	for (int i = 0; i < matrix_a_row*matrix_a_colume; i++)
+	{
+		*(matrix_result + i) = *(matrix_a + i) + *(matrix_b + i);
+	}
+	return 1;
+}
+
+typedef  struct EarthParameter
+{
+	double a;       //Ellipsoid long axis
+	double b;       //Ellipsoid short axis
+	double f;       //Ellipsoidal oblate 
+	double e;       //first Eccentricity of Elliopsoid 
+	double e2;
+	//double ep;
+	//double ep2;     //second Eccentricity of Elliopsoid 
+	double wie;     //rotational angular velocity of the earths  
+	double GM;      //geocentric gravitational constant 
+} EarthParameter;
+const  EarthParameter WGS84 = { 6378137.0, 6356752.3142, 0.0033528106643315515,0.081819190837555025,0.0066943799893122479 ,  7.2922115147e-5,398600441800000.00 };
+
+
+uint8_t UpdateMN(const double *BLH, double *M, double *N)
+{
+	double sinB = sin(*BLH);
+	double temp = 1 - WGS84.e2 * sinB * sinB;
+	double sqrttemp = sqrt(temp);
+	*M = WGS84.a * (1 - WGS84.e2) / (sqrttemp*temp);
+	*N = WGS84.a / sqrttemp;
+	return 1;
+};
+
 
 static std::map<uint8, std::pair<std::vector<double>, std::string>> rates = {
   { 0,  std::pair<std::vector<double>, std::string>({100,2.0,100}, "Unknown") },
@@ -127,6 +335,9 @@ std::ofstream output_process;
 std::ofstream output_gnss_kml;
 std::ofstream output_ins_kml;
 
+std::ofstream output_usergga;
+
+
 std::vector <novatel_gps_msgs::BestPos> gnss_msgs_;
 std::vector <novatel_gps_msgs::Velocity> gnssvel_msgs_;
 std::vector <novatel_gps_msgs::Inspva> ins_msgs_;
@@ -153,10 +364,15 @@ inline void  DegtoDMS(const double mdeg, int &Deg, int &Min, double &Sec)
 	Sec = (AM - Min) * 60.0;
 }
 
+FILE* output_GGA_GPS = NULL; /* output GGA for GPS input */
+
 bool file_open(const std::string input_fname)
 {
 	bool ret = false;
 	std::string fname = input_fname.substr(0, input_fname.find_last_of('.'));
+	std::string outfilename = fname + "-gga.nmea";
+	fopen_s(&output_GGA_GPS, outfilename.c_str(), "w");
+
 	if (publish_gnss_positions_) output_gnss.open(fname + "-gnss.csv");
 	if (pubilsh_gnss_vel_) output_gnss_vel.open(fname + "-gnssvel.csv");
 
@@ -322,6 +538,10 @@ int32_t getpostype(int position_type, int file_type)
 	{
 		switch (position_type)
 		{
+		case 1:
+			//rtk;
+			ret = 1;
+			break;
 		case 4:
 			//rtk;
 			ret = 4;
@@ -329,7 +549,11 @@ int32_t getpostype(int position_type, int file_type)
 		case 5:
 			//rtd;
 			ret = 5;
-			break;;
+			break;
+		case 6:
+			//rtd;
+			ret = 6;
+			break;
 		default:
 			break;
 		}
@@ -342,7 +566,15 @@ int32_t getpostype(int position_type, int file_type)
 			//spp;
 			ret = 1;
 			break;
+		case 53:
+			//spp;
+			ret = 1;
+			break;
 		case 17:
+			//rtd;
+			ret = 2;
+			break;
+		case 54:
 			//rtd;
 			ret = 2;
 			break;
@@ -353,6 +585,14 @@ int32_t getpostype(int position_type, int file_type)
 		case 50:
 			//fix;
 			ret = 4;
+			break;
+		case 56:
+			//fix;
+			ret = 4;
+			break;
+		case 55:
+			//fix;
+			ret = 5;
 			break;
 		case 34:
 			//float;
@@ -538,6 +778,7 @@ bool traceins(novatel_gps_msgs::InspvaPtr msg)
 	return ret;
 }
 
+
 bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 {
 	int ret = false;
@@ -557,6 +798,32 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 	//	msg->novatel_msg_header.gps_seconds += 604800 * (msg->novatel_msg_header.gps_week_num - firstgnssweek);
 	//	msg->novatel_msg_header.gps_week_num = firstgnssweek;
 	//}
+
+	if (fabs(msg->latitude) > 0.001 
+		&& (msg->ins_status_int == 3 || msg->ins_status_int == 6 || msg->ins_status_int == 7))
+	{
+		double leverarm_v[3] = { 0.0,-0.8128, 0.0};
+		double eular[3] = { msg->roll*PI / 180,msg->pitch * PI / 180,msg->azimuth * PI / 180 };
+		double C_vn[3][3];
+		euler2dcm(eular, C_vn);
+		double leverarm_n[3];
+		MatrixMutiply(*C_vn, leverarm_v, 3, 3, 1, leverarm_n);
+		double d_leverarm[3];
+		double pos[3] = { msg->latitude*PI / 180, msg->longitude*PI / 180, msg->altitude + msg->undulation };
+		double M, N;
+		UpdateMN(pos, &M, &N);
+		d_leverarm[0] = leverarm_n[0] / (M + pos[2]);
+		d_leverarm[1] = leverarm_n[1] / ((N + pos[2])*cos(pos[0]));
+		d_leverarm[2] = -leverarm_n[2];
+
+		MatrixAdd(pos, d_leverarm, 3, 1, pos);
+		unsigned char ggaBuffer[400] = { 0 };
+		int type = getpostype(msg->position_type_int,  1);
+		int len = outnmea_gga(ggaBuffer, msg->novatel_msg_header.gps_seconds, type, pos, 10, 1.0, 1.0);
+		fprintf(output_GGA_GPS, "%s", ggaBuffer);
+	}
+
+
 	if (publish_inspvax_)
 	{
 		output_ins << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
@@ -1577,6 +1844,8 @@ bool file_close()
 		output_gnss_kml.close();
 		output_ins_kml.close();
 	}
+	if (!output_GGA_GPS) fclose(output_GGA_GPS);
+
 	return ret;
 }
 
