@@ -23,7 +23,7 @@
     <ProjectGuid>{E25B8C32-B1D9-4CCF-83F6-9DD6D41667E9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>spandecoder</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -153,10 +153,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dirent.c" />
     <ClCompile Include="kml.cpp" />
     <ClCompile Include="span_decoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dirent.h" />
     <ClInclude Include="kml.h" />
     <ClInclude Include="minizipdll.h" />
   </ItemGroup>
