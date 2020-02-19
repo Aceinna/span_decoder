@@ -285,7 +285,7 @@ static void parse_fields(char* const buffer, char** val)
 void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 {
 	FILE* fdat = NULL;
-	FILE* fgga = NULL;
+	FILE* fgga = NULL, *fgga_ins = NULL;
 	FILE* fpos = NULL;
 	FILE* fgps = NULL;
 	FILE* fimu = NULL;
@@ -303,11 +303,12 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	char* result1 = strrchr(fileName, '.');
 	if (result1 != NULL) result1[0] = '\0';
 
-	sprintf(outfilename, "%s.gga", fileName); fgga = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-gnss.gga", fileName); fgga = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-gps.bin", fileName); fgps = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-pos.csv", fileName); fpos = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-imu.csv", fileName); fimu = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-ins.csv", fileName); fins = fopen(outfilename, "w");
+	sprintf(outfilename, "%s-ins.gga", fileName); fgga_ins = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-hdg.csv", fileName); fhdg = fopen(outfilename, "w");
 	sprintf(out_kml_fpath, "%s.kml", fileName); fkml = fopen(out_kml_fpath, "w");
 
@@ -508,6 +509,11 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			strcpy(sol_status+strlen(sol_status), ",");
 			strcpy(sol_status+strlen(sol_status), val[10]);
 
+			gtime_t gt = gpst2time(wn, ws);
+			char gga[256] = { 0 };
+			print_nmea_gga(gt, blh, 20, solType, 1.0, 1.0, gga);
+			if (NULL != fgga_ins) fprintf(fgga_ins, "%s", gga);
+
 			//printf("GPS TOW: %f\n", ws);
 			float heading = atof(val[20]);
 #ifndef GNSS_ONLY
@@ -569,6 +575,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	if (fgps != NULL) fclose(fgps);
 	if (fimu != NULL) fclose(fimu);
 	if (fins != NULL) fclose(fins);
+	if (fgga_ins != NULL) fclose(fgga_ins);
 	if (fhdg != NULL) fclose(fhdg);
 	if (fkml != NULL) {
 		fclose(fkml);
@@ -822,7 +829,7 @@ bool diff_with_span(const char *fname_sol, const char *fname_span)
 
 int main()
 {
-	decode_span("C:\\Users\\da\\Documents\\346\\1\\novatel_CPT7-2019_12_12_15_52_00.ASC", SPAN_CPT7, 100.0, 0);
+	decode_span("C:\\Users\\da\\Documents\\049\\2\\novatel_CPT7-2020_02_18_17_19_51.ASC", SPAN_CPT7, 100.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
