@@ -347,23 +347,25 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			double ws = atof(val[6]);
 			double rms[3] = { atof(val[16]), atof(val[17]), atof(val[18]) };
 			int type = 0;
-			if (strstr(val[10], "SINGLE") != NULL) type = 1;
-			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
-			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
-			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
-			if (fpos != NULL) {
-				fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
-#ifdef GNSS_ONLY
-				char solsts[28] = { "GNSS only" };
-				print_kml_gga(fkml, blh[0], blh[1], blh[2], type, ws, 0.0, solsts);
-#endif
-			}
 
-			gtime_t gt = gpst2time(wn, ws);
-			char gga[256] = { 0 };
-			print_nmea_gga(gt, blh, atof(val[23]), type, 1.0, atof(val[20]), gga);
-			if (NULL != fgga) fprintf(fgga, "%s", gga);
-			
+			if (strstr(val[9], "SOL_COMPUTED") != NULL) {
+				if (strstr(val[10], "SINGLE") != NULL) type = 1;
+				else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
+				else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
+				else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
+				if (fpos != NULL) {
+					fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
+#ifdef GNSS_ONLY
+					char solsts[28] = { "GNSS only" };
+					print_kml_gga(fkml, blh[0], blh[1], blh[2], type, ws, 0.0, solsts);
+#endif
+				}
+
+				gtime_t gt = gpst2time(wn, ws);
+				char gga[256] = { 0 };
+				print_nmea_gga(gt, blh, atof(val[23]), type, 1.0, atof(val[20]), gga);
+				if (NULL != fgga) fprintf(fgga, "%s", gga);
+			}
 			continue;
 		}
 		if (strstr(val[0], "RTKPOSA") != NULL)
@@ -520,7 +522,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			gtime_t gt = gpst2time(wn, ws);
 			char gga[256] = { 0 };
 			print_nmea_gga(gt, blh, 20, solType, 1.0, 1.0, gga);
-			if (NULL != fgga_ins) fprintf(fgga_ins, "%s", gga);
+			if (NULL != fGGA_INS) fprintf(fGGA_INS, "%s", gga);
 
 			//printf("GPS TOW: %f\n", ws);
 			float heading = atof(val[20]);
@@ -592,7 +594,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	if (fgps != NULL) fclose(fgps);
 	if (fimu != NULL) fclose(fimu);
 	if (fins != NULL) fclose(fins);
-	if (fgga_ins != NULL) fclose(fgga_ins);
+	if (fGGA_INS != NULL) fclose(fGGA_INS);
 	if (fhdg != NULL) fclose(fhdg);
 	if (fkml != NULL) {
 		fclose(fkml);
@@ -1013,7 +1015,7 @@ int main()
 {
 	char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
 	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";
-	//decode_span("C:\\Users\\da\\Documents\\346\\1\\novatel_CPT7-2019_12_12_15_52_00.ASC", SPAN_CPT7, 100.0, 0);
+	decode_span("C:\\Users\\Administrator\\Documents\\0502\\novatel_CPT7-2020_02_19_16_30_29.ASC", SPAN_CPT7, 100.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
@@ -1024,5 +1026,5 @@ int main()
 	//diff_with_span(fname1, fname2);
 	//diff_with_span_rtk(fname1, fname2);
 
-	decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
+	//decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
 }
