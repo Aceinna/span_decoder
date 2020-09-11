@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <assert.h>
 
 #include "minizipdll.h"
 #pragma comment(lib,"MINIZIPDLL.lib")
@@ -21,6 +22,12 @@
 #define SPAN_FLEX6 1
 #define SPAN_ACEINNA 2
 #define SPAN_ADI16488 3
+
+#define HEADKML1 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+#define HEADKML2 "<kml xmlns=\"http://www.opengis.net/kml/2.2\">"
+#define MARKICON "http://maps.google.com/mapfiles/kml/shapes/track.png"
+#define SIZP     0.4            /* mark size of rover positions */
+#define SIZR     0.8            /* mark size of reference position */
 
 #define	grav_WGS84 9.7803267714e0
 #ifndef PI
@@ -294,7 +301,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	FILE* fgps = NULL;
 	FILE* fimu = NULL;
 	FILE* fins = NULL;
-	FILE* fkml = NULL;
+	FILE* fpkml = NULL;
 	FILE* fhdg = NULL;
 	FILE* fGGA_INS = NULL;
 
@@ -315,9 +322,9 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	sprintf(outfilename, "%s-imu.csv", fileName); fimu = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-ins.csv", fileName); fins = fopen(outfilename, "w");
 	sprintf(outfilename, "%s-hdg.csv", fileName); fhdg = fopen(outfilename, "w");
-	sprintf(out_kml_fpath, "%s.kml", fileName); fkml = fopen(out_kml_fpath, "w");
+	sprintf(out_kml_fpath, "%s.kml", fileName); fpkml = fopen(out_kml_fpath, "w");
 
-	if (fkml!=NULL) print_kml_heder(fkml);
+	if (fpkml!=NULL) print_kml_heder(fpkml);
 
 	int type = 0;
 	int wn = 0;
@@ -357,7 +364,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 					fprintf(fpos, "%4.0f,%10.3f,1,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i\n", wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type);
 #ifdef GNSS_ONLY
 					char solsts[28] = { "GNSS only" };
-					print_kml_gga(fkml, blh[0], blh[1], blh[2], type, ws, 0.0, solsts);
+					print_kml_gga(fpkml, blh[0], blh[1], blh[2], type, ws, 0.0, solsts);
 #endif
 				}
 
@@ -527,7 +534,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			//printf("GPS TOW: %f\n", ws);
 			float heading = atof(val[20]);
 #ifndef GNSS_ONLY
-			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
+			print_kml_gga(fpkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
 #endif			
 
 			if (fGGA_INS)
@@ -579,13 +586,13 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			float heading = 0.0f;
 			strcpy(sol_status, val[13]);
 #ifdef INSPVA_SHORT
-			print_kml_gga(fkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
+			print_kml_gga(fpkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
 #endif			
 			continue;
 		}
 	}
 
-	if (fkml != NULL) print_kml_eof(fkml);
+	if (fpkml != NULL) print_kml_eof(fpkml);
 
 	if (fdat != NULL) fclose(fdat);
 	if (fgga != NULL) fclose(fgga);
@@ -596,8 +603,8 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 	if (fins != NULL) fclose(fins);
 	if (fGGA_INS != NULL) fclose(fGGA_INS);
 	if (fhdg != NULL) fclose(fhdg);
-	if (fkml != NULL) {
-		fclose(fkml);
+	if (fpkml != NULL) {
+		fclose(fpkml);
 
 		if (isKMZ == 1)
 		{
@@ -614,6 +621,144 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			minizip(3, paras);
 		}
 	}
+
+	return;
+}
+
+static void span_csv_to_kml(const char* fname_span)
+{
+	FILE* fpkml = NULL, * fpspan = NULL;
+
+	char fileName[255] = { 0 };
+	char outfilename[255] = { 0 };
+	char buffer[1024] = { 0 };
+
+	fpspan = fopen(fname_span, "r");
+
+	if (fpspan == NULL) return;
+
+	strncpy(fileName, fname_span, strlen(fname_span));
+	char* result1 = strrchr(fileName, '.');
+	if (result1 != NULL) result1[0] = '\0';
+
+	sprintf(outfilename, "%s.kml", fileName);
+	fpkml = fopen(outfilename, "w");
+
+	//B-G-R white green light-yellow  red yellow cyan
+	const char* color[] = { "ffffffff","ff008800","ff00aaff","ff0000ff","ff00ffff","ffff00ff" };
+	fprintf(fpkml, "%s\n%s\n", HEADKML1, HEADKML2);
+	fprintf(fpkml, "<Document>\n");
+	for (int i = 0; i < 6; i++) {
+		fprintf(fpkml, "<Style id=\"P%d\">\n", i);
+		fprintf(fpkml, "  <IconStyle>\n");
+		fprintf(fpkml, "    <color>%s</color>\n", color[i]);
+		fprintf(fpkml, "    <scale>%.1f</scale>\n", i == 0 ? SIZR : SIZP);
+		fprintf(fpkml, "    <Icon><href>%s</href></Icon>\n", MARKICON);
+		fprintf(fpkml, "  </IconStyle>\n");
+		fprintf(fpkml, "</Style>\n");
+	}
+
+	char* val[MAXFIELD];
+	char str[256] = "";
+	double gpstow_sol = 0.0, gpstow_span = 0.0;
+	ins_pva sol_pva = { 0 }, span_pva = { 0 };
+
+	int idxpos = 0, idxvel = 0, idxatt = 0;
+
+	double ep[6] = { 0.0 };
+	ep[0] = 2019;
+	ep[1] = 11;
+	ep[2] = 8;
+	double posdata[10] = { 0.0 };
+	double posdata2[20] = { 0.0 };
+
+	int wk = 0;
+
+	while (!feof(fpspan))
+	{
+		memset(buffer, 0, sizeof(buffer));
+
+		fgets(buffer, sizeof(buffer), fpspan);
+		if (strlen(buffer) <= 0) continue;
+
+		int type = 0;
+		int fixID = 0;
+		int num = sscanf(buffer, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			posdata2, &gpstow_span, posdata2 + 1, posdata2 + 2, posdata2 + 3
+			, posdata2 + 4, posdata2 + 5, posdata2 + 6
+			, posdata2 + 7, posdata2 + 8, posdata2 + 9
+			, posdata2 + 10, posdata2 + 11, posdata2 + 12
+			, posdata2 + 13, posdata2 + 14, posdata2 + 15
+			, posdata2 + 16, posdata2 + 17, posdata2 + 18);
+
+		/*posdata2[1] *= PI / 180.0;
+		posdata2[2] *= PI / 180.0;*/
+
+		wk = posdata2[0];
+		gtime_t tm = gpst2time(wk, gpstow_span);
+		time2epoch(tm, ep);
+
+		int output_kml_pnt = (gpstow_span - floor(gpstow_span)) < 0.05 ? 1 : 0;
+
+		if (fpkml != NULL && output_kml_pnt) {
+			fprintf(fpkml, "<Placemark>\n");
+			fprintf(fpkml, "<TimeStamp><when>%s</when></TimeStamp>\n", str);
+			fprintf(fpkml, "<description><![CDATA[\n");
+			fprintf(fpkml, "<TABLE border=\"1\" width=\"100%\" Align=\"center\">\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT>\n");
+			fprintf(fpkml, "<TR ALIGN = RIGHT><TD ALIGN = LEFT>Time:</TD><TD>");
+			fprintf(fpkml, "%4d</TD><TD>", wk);
+			fprintf(fpkml, "%11.4f</TD><TD>", gpstow_span);
+			fprintf(fpkml, "%02.0f:%02.0f:%06.3f</TD><TD>", ep[3], ep[4], ep[5]);
+			fprintf(fpkml, "%2d/%2d/%3d</TD></TR>\n", (int)ep[0], (int)ep[1], (int)ep[2]);
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Position:</TD><TD>");
+			fprintf(fpkml, "%11.7f</TD><TD>", posdata2[1]);
+			fprintf(fpkml, "%11.7f</TD><TD>", posdata2[2]);
+			fprintf(fpkml, "%8.4f</TD>", posdata2[3]);
+			fprintf(fpkml, "<TD>(DMS,m)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Vel(N,E,D):</TD><TD>");
+			fprintf(fpkml, "%8.4f</TD><TD>", posdata2[4]);
+			fprintf(fpkml, "%8.4f</TD><TD>", posdata2[5]);
+			fprintf(fpkml, "%8.4f</TD>", posdata2[6]);
+			fprintf(fpkml, "<TD>(m/s)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Att(r,p,y):</TD><TD>");
+			fprintf(fpkml, "%8.4f</TD><TD>", posdata2[7]);
+			fprintf(fpkml, "%8.4f</TD><TD>", posdata2[8]);
+			fprintf(fpkml, "%8.4f</TD>", posdata2[9]);
+			fprintf(fpkml, "<TD>(deg)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Misc Info:</TD><TD>");
+			fprintf(fpkml, "%d</TD><TD>", 0);
+			fprintf(fpkml, "%d</TD><TD>", 0);
+			fprintf(fpkml, "%d</TD>", 0);
+			fprintf(fpkml, "<TD></TD></TR>\n");
+			fprintf(fpkml, "</TABLE>\n");
+			fprintf(fpkml, "]]></description>\n");
+
+			fprintf(fpkml, "<styleUrl>#P%d</styleUrl>\n", 2);
+			fprintf(fpkml, "<Style>\n");
+			fprintf(fpkml, "<IconStyle>\n");
+			fprintf(fpkml, "<heading>%f</heading>\n", posdata2[9]);
+			fprintf(fpkml, "</IconStyle>\n");
+			fprintf(fpkml, "</Style>\n");
+
+
+			fprintf(fpkml, "<Point>\n");
+			fprintf(fpkml, "<coordinates>%13.9f,%12.9f,%5.3f</coordinates>\n", posdata2[2],
+				posdata2[1], posdata2[3]);
+			fprintf(fpkml, "</Point>\n");
+			fprintf(fpkml, "</Placemark>\n");
+		}
+
+	}
+
+	
+
+	if (fpkml != NULL) {
+		fprintf(fpkml, "</Document>\n");
+		fprintf(fpkml, "</kml>\n");
+		fclose(fpkml);
+	}
+	if (fpspan != NULL) fclose(fpspan);
 
 	return;
 }
@@ -1011,11 +1156,12 @@ void decode_span_dirctory(const char* dirname, const char* fExt, int format, int
 	return;
 }
 
-int main()
+
+int main(int argc, char *argv[])
 {
-	char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
+	/*char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
 	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";
-	decode_span("C:\\Users\\Administrator\\Documents\\0502\\novatel_CPT7-2020_02_19_16_30_29.ASC", SPAN_CPT7, 100.0, 0);
+	decode_span("C:\\Users\\Administrator\\Documents\\0502\\novatel_CPT7-2020_02_19_16_30_29.ASC", SPAN_CPT7, 100.0, 0);*/
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
@@ -1025,6 +1171,19 @@ int main()
 
 	//diff_with_span(fname1, fname2);
 	//diff_with_span_rtk(fname1, fname2);
+
+	//span_csv_to_kml("E:\\data\\INS_ODO\\Process\\0827\\test1\\ref\\240.csv");
+	char fpath[256] = { 0 };
+
+	if (argc < 2) {
+		printf("Please input file path:\n");
+		scanf("%s", fpath);
+		span_csv_to_kml(fpath);
+	} 
+	else {
+		span_csv_to_kml(argv[1]);
+	}
+
 
 	//decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
 }
