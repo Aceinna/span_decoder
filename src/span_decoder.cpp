@@ -154,6 +154,7 @@ void decode_span(const std::string fname)
 	{
 		saveinspvaxkml(inspvax_msgs_, tcolor, pcolor, outalt, outtime);
 		savegnssposkml(gnss_msgs_, tcolor, pcolor, outalt, outtime);
+		saveinskml(ins_msgs_, tcolor, pcolor, outalt, outtime);
 	}
 	else
 	{
@@ -180,8 +181,9 @@ int main(int argc, char **argv)
 	}
 	if (FILE_TYPE == ACEINNA)
 	{
-		publish_gnss_positions_ = true;
-		pubilsh_gnss_vel_ = true;
+		publish_gnss_ = true;
+		publish_gnss_positions_ = false;
+		pubilsh_gnss_vel_ = false;
 		publish_aceinna_imu_ = true;
 		publish_ins_ = true;
 		publish_process_ = true;
@@ -196,6 +198,7 @@ int main(int argc, char **argv)
 		publish_gnss_positions_ = true;
 		pubilsh_gnss_vel_ = false;
 		publish_aceinna_imu_ = false;
+		publish_ins_ = true;
 		publish_ins_ = false;
 		publish_process_ = true;
 		publish_kml_ = true;

@@ -172,6 +172,10 @@ namespace novatel_gps_driver
 	{
 		return -2;
 	}
+	if (data_length == 0)
+	{
+		return -2;
+	}
 
     if (msg.header_.sync0_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[0]) ||
         msg.header_.sync1_ != static_cast<uint8_t>(NOVATEL_BINARY_SYNC_BYTES[1]) ||

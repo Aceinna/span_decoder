@@ -168,6 +168,13 @@ namespace novatel_gps_driver
     return number;
   }
 
+  uint64_t ParseUInt64(const uint8_t* buffer)
+  {
+	  uint64_t number;
+	  std::copy(buffer, buffer + 8, reinterpret_cast<uint8_t*>(&number));
+	  return number;
+  }
+
   bool ParseInt32(const std::string& string, int32_t& value, int32_t base)
   {
     return swri_string_util::ToInt32(string, value, base) || string.empty();

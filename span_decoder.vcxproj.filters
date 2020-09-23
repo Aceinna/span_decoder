@@ -198,6 +198,12 @@
     <ClInclude Include="include\parsers\trackstat.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
+    <ClInclude Include="include\msg\odometer.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="include\parsers\odometer.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="swri_util\string_util.cpp">
@@ -298,6 +304,9 @@
     </ClCompile>
     <ClCompile Include="src\rtktime.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\odometer.cpp">
+      <Filter>src\parsers</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

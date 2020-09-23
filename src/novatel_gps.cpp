@@ -361,7 +361,7 @@ namespace novatel_gps_driver
       case BestposParser::MESSAGE_ID:
       {
         novatel_gps_msgs::BestPosPtr position = bestpos_parser_.ParseBinary(msg);
-		tracegnss(position);
+		tracegnss(position, msg.header_.message_id_);
        // novatel_positions_.push_back(position);  /new
         //position_sync_buffer_.push_back(position);
         break;
@@ -369,7 +369,7 @@ namespace novatel_gps_driver
 	  case 42:
 	  {
 		  novatel_gps_msgs::BestPosPtr position = bestpos_parser_.ParseBinary(msg);
-		  tracegnss(position);
+		  tracegnss(position,42);
 		  // novatel_positions_.push_back(position);  /new
 		   //position_sync_buffer_.push_back(position);
 		  break;
@@ -485,6 +485,12 @@ namespace novatel_gps_driver
 		  novatel_gps_msgs::RawimusxPtr rawimusx = rawimusx_parser_.ParseBinary(msg);
 		  tracenovatelimu(rawimusx);  //new
 		  //rawimusx_msgs_.push_back(rawimusx);
+		  break;
+	  }
+	  case OdometerParser::MESSAGE_ID:
+	  {
+		  novatel_gps_msgs::OdometerPtr odometer = odometer_parser_.ParseBinary(msg);
+		  traceodometer(odometer);  //new
 		  break;
 	  }
       default:

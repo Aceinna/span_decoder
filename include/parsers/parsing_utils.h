@@ -204,6 +204,9 @@ namespace novatel_gps_driver
    */
   int32_t ParseInt32(const uint8_t* buffer);
 
+  uint64_t ParseUInt64(const uint8_t* buffer);
+
+
   /**
    * @brief Parses a string containing an integer number into an int32_t.
    *

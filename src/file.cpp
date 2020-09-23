@@ -39,6 +39,10 @@
 #define FSAS_GYRO   1.085069444444445E-07  //0.1x 2-8 arcsec/LSB
 #define FSAS_ACC    1.525878906250000E-06  //0.05 x 2-15 m/s/LSB
 
+#define ISA100C_GYRO 5.729577951308233E-08
+#define ISA100C_ACC 2.0E-8
+
+
 #define CPT_GYRO   6.670106611340576E-09  /* 2^-33 * 180 /PI */
 
 #define MAXLEAPS    64                  /* max number of leap seconds table */
@@ -262,7 +266,7 @@ static std::map<uint8, std::pair<std::vector<double>, std::string>> rates = {
   { 16, std::pair<std::vector<double>, std::string>({200,100,100}, "KVH 1750 IMU") },
   { 19, std::pair<std::vector<double>, std::string>({200,100,100}, "Northrop Grumman Litef LCI-1") },
   { 20, std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1930 AA99") },
-  { 26, std::pair<std::vector<double>, std::string>({100,100,100}, "Northrop Grumman Litef ISA-100C") },
+  { 26, std::pair<std::vector<double>, std::string>({200,ISA100C_GYRO,ISA100C_ACC}, "Northrop Grumman Litef ISA-100C") },
   { 27, std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1900 CA50") },
   { 28, std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1930 CA50") },
   { 31, std::pair<std::vector<double>, std::string>({200,100,100}, "Analog Devices ADIS16488") },
@@ -314,26 +318,36 @@ const std::string INERTIAL_STATUSES[] = {
 int FILE_TYPE = 0;
 
 
-bool publish_gnss_positions_ = true;
-bool pubilsh_gnss_vel_ = true;
+bool publish_gnss_positions_ = false;
+bool pubilsh_gnss_vel_ = false;
 bool publish_aceinna_imu_ = true;
+bool publish_odometer_imu_ = true;
 bool publish_ins_ = true;
+bool publish_ins_gga_ = false;
 bool publish_process_ = true;
+bool publish_gnss_ = true;
 bool publish_kml_ = true;
-
+bool publish_gnss_gga_ = false;
 bool publish_inspvax_ = false;
 bool publish_imu_messages_ = false;
 bool publish_gps_bin = false;
-
-
+bool publish_gnss_csv = false;
+bool publish_ins_csv = false;
 std::ifstream iput_file;
 std::ofstream output_gnss;
 std::ofstream output_gnss_vel;
 std::ofstream output_imu;
+std::ofstream output_odo;
 std::ofstream output_ins;
 std::ofstream output_process;
+
+std::ofstream output_gnssposvel;
 std::ofstream output_gnss_kml;
 std::ofstream output_ins_kml;
+
+std::ofstream output_gnss_csv;
+std::ofstream output_ins_csv;
+
 
 std::ofstream output_usergga;
 
@@ -365,22 +379,32 @@ inline void  DegtoDMS(const double mdeg, int &Deg, int &Min, double &Sec)
 }
 
 FILE* output_GGA_GPS = NULL; /* output GGA for GPS input */
+FILE* output_GGA_INS = NULL; /* output GGA for INS input */
+
 
 bool file_open(const std::string input_fname)
 {
 	bool ret = false;
 	std::string fname = input_fname.substr(0, input_fname.find_last_of('.'));
 	std::string outfilename = fname + "-gga.nmea";
+	if(publish_gnss_gga_)
 	fopen_s(&output_GGA_GPS, outfilename.c_str(), "w");
 
-	if (publish_gnss_positions_) output_gnss.open(fname + "-gnss.csv");
-	if (pubilsh_gnss_vel_) output_gnss_vel.open(fname + "-gnssvel.csv");
+	if (publish_gnss_) output_gnssposvel.open(fname + "-gnssposvel.txt");
+	if (publish_gnss_positions_) output_gnss.open(fname + "-gnss.txt");
+	if (pubilsh_gnss_vel_) output_gnss_vel.open(fname + "-gnssvel.txt");
 
-	if (publish_aceinna_imu_)   output_imu.open(fname + "-imu.csv");
-	if (publish_imu_messages_)   output_imu.open(fname + "-imu.csv");
+	if (publish_aceinna_imu_)   output_imu.open(fname + "-imu.txt");
+	if (publish_odometer_imu_)   output_odo.open(fname + "-odo.txt");
 
-	if (publish_ins_)  output_ins.open(fname + "-ins.csv");
-	if (publish_inspvax_)  output_ins.open(fname + "-ins.csv");
+	if (publish_imu_messages_)   output_imu.open(fname + "-imu.txt");
+
+	if (publish_ins_)  output_ins.open(fname + "-ins.txt");
+	outfilename = fname + "-ins-gga.nmea";
+	if (publish_ins_gga_) 	fopen_s(&output_GGA_INS, outfilename.c_str(), "w");
+
+
+	if (publish_inspvax_)  output_ins.open(fname + "-ins.txt");
 
 	if (publish_process_) output_process.open(fname + "-process");
 
@@ -389,6 +413,21 @@ bool file_open(const std::string input_fname)
 		output_gnss_kml.open(fname + "-gnss.kml");
 		output_ins_kml.open(fname + "-ins.kml");
 	}
+
+	if (publish_gnss_csv)
+	{
+		output_gnss_csv.open(fname + "-gnss.csv");
+		output_gnss_csv << "Week,GPSTime,Roll,Pitch,Heading,VX-ECEF,VY-ECEF,VZ-ECEF,VEast,VNorth,VUp,AngRateX,AngRateY,AngRateZ,AccBdyX,AccBdyY,AccBdyZ,X-ECEF,Y-ECEF,Z-ECEF,RollSD,PitchSD,HdngSD,SDEast,SDNorth,SDHeight,SD-VE,SD-VN,SD-VH,Latitude,Longitude,H-Ell,NS,HDOP" << std::endl;
+		output_gnss_csv << "(weeks),(sec),(deg),(deg),(deg),(m/s),(m/s),(m/s),(m/s),(m/s),(m/s),(deg/s),(deg/s),(deg/s),(m/s^2),(m/s^2),(m/s^2),(m),(m),(m),(deg),(deg),(deg),(m),(m),(m),(m/s),(m/s),(m/s),(deg),(deg),(m),,(dop)" << std::endl;
+	}
+
+	if (publish_ins_csv)
+	{
+		output_ins_csv.open(fname + "-ins.csv");
+		output_ins_csv << "Week,GPSTime,Roll,Pitch,Heading,VX-ECEF,VY-ECEF,VZ-ECEF,VEast,VNorth,VUp,AngRateX,AngRateY,AngRateZ,AccBdyX,AccBdyY,AccBdyZ,X-ECEF,Y-ECEF,Z-ECEF,RollSD,PitchSD,HdngSD,SDEast,SDNorth,SDHeight,SD-VE,SD-VN,SD-VH,Latitude,Longitude,H-Ell,NS,HDOP" << std::endl;
+		output_ins_csv << "(weeks),(sec),(deg),(deg),(deg),(m/s),(m/s),(m/s),(m/s),(m/s),(m/s),(deg/s),(deg/s),(deg/s),(m/s^2),(m/s^2),(m/s^2),(m),(m),(m),(deg),(deg),(deg),(m),(m),(m),(m/s),(m/s),(m/s),(deg),(deg),(m),,(dop)" << std::endl;
+	}
+
 	ret = true;
 	return ret;
 }
@@ -531,6 +570,35 @@ bool tracenovatelimu(novatel_gps_msgs::RawimusxPtr msg)
 	return ret;
 }
 
+bool traceodometer(novatel_gps_msgs::OdometerPtr msg)
+{
+	bool ret = false;
+	if (publish_odometer_imu_)
+	{
+		output_odo << std::setw(4) << msg->gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->gps_seconds << ","
+			<< std::setw(14) << (int)msg->mode << ","
+			<< std::setw(14) << std::setprecision(10) << msg->speed << ","
+			<< std::setw(14) << (int)msg->fwd << ","
+			<< std::setw(14) << msg->wheel_tick
+			<< std::endl;
+
+	}
+	if (publish_process_)
+	{
+		output_process << "$GPODO,"
+			<< std::setw(4) << msg->gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->gps_seconds << ","
+			<< std::setw(14) << (int)msg->mode << ","
+			<< std::setw(14) << std::setprecision(10) << msg->speed << ","
+			<< std::setw(14) << (int)msg->fwd << ","
+			<< std::setw(14) << msg->wheel_tick
+			<< std::endl;
+	}
+	ret = true;
+	return ret;
+}
+
 int32_t getpostype(int position_type, int file_type)
 {
 	int32_t ret = 0;
@@ -541,6 +609,10 @@ int32_t getpostype(int position_type, int file_type)
 		case 1:
 			//rtk;
 			ret = 1;
+			break;
+		case 2:
+			//rtd;
+			ret = 2;
 			break;
 		case 4:
 			//rtk;
@@ -607,9 +679,13 @@ int32_t getpostype(int position_type, int file_type)
 	return ret;
 }
 
-bool tracegnss(novatel_gps_msgs::BestPosPtr msg)
+bool tracegnss(novatel_gps_msgs::BestPosPtr msg,int ID)
 {
 	bool ret = false;
+	if (FILE_TYPE == NOVATEL &&ID != 1429)
+	{
+		return -1;
+	}
 	if (publish_kml_)
 	{
 		if (fabs(msg->lat) > 0.001)
@@ -625,6 +701,28 @@ bool tracegnss(novatel_gps_msgs::BestPosPtr msg)
 		type = 0;
 	}
 
+	if (publish_gnss_csv)
+	{
+		output_gnss_csv << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+			<< "0" << "," << "0" << "," << "0" << "," // roll ,pitch ,heading
+			<< "0" << "," << "0" << "," << "0" << "," // 
+			<< "0" << "," << "0" << "," << "0" << "," // ve vn vd
+			<< "0" << "," << "0" << "," << "0" << "," // wnb
+			<< "0" << "," << "0" << "," << "0" << "," // a_n
+			<< "0" << "," << "0" << "," << "0" << "," // 
+			<< "0" << "," << "0" << "," << "0" << "," // p
+			<< std::setw(10) << std::setprecision(4) << msg->lat_sigma << ","
+			<< std::setw(10) << std::setprecision(4) << msg->lat_sigma << ","
+			<< std::setw(10) << std::setprecision(4) << msg->height_sigma << ","
+			<< "0" << "," << "0" << "," << "0" << "," // p
+			<< std::setw(14) << std::setprecision(9) << msg->lat << ","
+			<< std::setw(14) << std::setprecision(9) << msg->lon << ","
+			<< std::setw(10) << std::setprecision(4) << msg->height + msg->undulation << ","
+			<< "0" << "0" << std::endl;
+	}
+
+
 	//if (firstgnssweek == -1)
 	//{
 	//	firstgnssweek = msg->novatel_msg_header.gps_week_num;
@@ -638,16 +736,19 @@ bool tracegnss(novatel_gps_msgs::BestPosPtr msg)
 	{
 		if (FILE_TYPE != NOVATEL ||fmod(msg->novatel_msg_header.gps_seconds + 0.001, 1) < 0.01)
 		{
-			output_gnss << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
-				<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
-				<< std::setw(14) << std::setprecision(9) << msg->lat << ","
-				<< std::setw(14) << std::setprecision(9) << msg->lon << ","
-				<< std::setw(10) << std::setprecision(4) << msg->height + msg->undulation << ","
-				<< std::setw(10) << std::setprecision(4) << msg->lat_sigma << ","
-				<< std::setw(10) << std::setprecision(4) << msg->lon_sigma << ","
-				<< std::setw(10) << std::setprecision(4) << msg->height_sigma << ","
-				<< type
-				<< std::endl;
+			if (type >= 0)
+			{
+				output_gnss << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+					<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+					<< std::setw(14) << std::setprecision(9) << msg->lat << ","
+					<< std::setw(14) << std::setprecision(9) << msg->lon << ","
+					<< std::setw(10) << std::setprecision(4) << msg->height + msg->undulation << ","
+					<< std::setw(10) << std::setprecision(4) << msg->lat_sigma << ","
+					<< std::setw(10) << std::setprecision(4) << msg->lon_sigma << ","
+					<< std::setw(10) << std::setprecision(4) << msg->height_sigma << ","
+					<< type
+					<< std::endl;
+			}
 		}
 	}
 	if (publish_process_)
@@ -741,6 +842,29 @@ bool traceins(novatel_gps_msgs::InspvaPtr msg)
 	//	msg->novatel_msg_header.gps_week_num = firstgnssweek;
 	//}
 	int ret = false;
+	if (publish_ins_gga_ && fabs(msg->latitude) > 0.001
+		&& (msg->status_int))
+	{
+		double leverarm_v[3] = { 0.0,0.0, 0.0 };
+		double eular[3] = { msg->roll*PI / 180,msg->pitch * PI / 180,msg->azimuth * PI / 180 };
+		double C_vn[3][3];
+		euler2dcm(eular, C_vn);
+		double leverarm_n[3];
+		MatrixMutiply(*C_vn, leverarm_v, 3, 3, 1, leverarm_n);
+		double d_leverarm[3];
+		double pos[3] = { msg->latitude*PI / 180, msg->longitude*PI / 180, msg->height };
+		double M, N;
+		UpdateMN(pos, &M, &N);
+		d_leverarm[0] = leverarm_n[0] / (M + pos[2]);
+		d_leverarm[1] = leverarm_n[1] / ((N + pos[2])*cos(pos[0]));
+		d_leverarm[2] = -leverarm_n[2];
+
+		MatrixAdd(pos, d_leverarm, 3, 1, pos);
+		unsigned char ggaBuffer[400] = { 0 };
+		int type = msg->status_int;
+		int len = outnmea_gga(ggaBuffer, msg->novatel_msg_header.gps_seconds, type, pos, 10, 1.0, 1.0);
+		fprintf(output_GGA_INS, "%s", ggaBuffer);
+	}
 	if (publish_ins_ && fabs(msg->latitude) > 0.001)
 	{
 		output_ins << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
@@ -799,10 +923,10 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 	//	msg->novatel_msg_header.gps_week_num = firstgnssweek;
 	//}
 
-	if (fabs(msg->latitude) > 0.001 
+	if (publish_gnss_gga_ &&fabs(msg->latitude) > 0.001 
 		&& (msg->ins_status_int == 3 || msg->ins_status_int == 6 || msg->ins_status_int == 7))
 	{
-		double leverarm_v[3] = { 0.0,-0.8128, 0.0};
+		double leverarm_v[3] = { 0.0,0.0, 0.0};
 		double eular[3] = { msg->roll*PI / 180,msg->pitch * PI / 180,msg->azimuth * PI / 180 };
 		double C_vn[3][3];
 		euler2dcm(eular, C_vn);
@@ -821,6 +945,39 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 		int type = getpostype(msg->position_type_int,  1);
 		int len = outnmea_gga(ggaBuffer, msg->novatel_msg_header.gps_seconds, type, pos, 10, 1.0, 1.0);
 		fprintf(output_GGA_GPS, "%s", ggaBuffer);
+	}
+
+	if (fabs(msg->latitude) > 0.001
+		&& (msg->ins_status_int == 3 || msg->ins_status_int == 6 || msg->ins_status_int == 7))
+	{
+		if (publish_ins_csv)
+		{
+			output_ins_csv << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+				<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+				<< std::setw(10) << std::setprecision(4) << msg->roll << ","
+				<< std::setw(10) << std::setprecision(4) << msg->pitch << ","
+				<< std::setw(10) << std::setprecision(4) << msg->azimuth << ","
+				<< "0" << "," << "0" << "," << "0" << "," // 
+				<< std::setw(10) << std::setprecision(4) << msg->east_velocity << ","
+				<< std::setw(10) << std::setprecision(4) << msg->north_velocity << ","
+				<< std::setw(10) << std::setprecision(4) << msg->up_velocity << ","
+				<< "0" << "," << "0" << "," << "0" << "," // wnb
+				<< "0" << "," << "0" << "," << "0" << "," // a_n
+				<< "0" << "," << "0" << "," << "0" << "," // 
+				<< std::setw(10) << std::setprecision(4) << msg->roll_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->pitch_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->azimuth_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->longitude_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->latitude_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->altitude_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->east_velocity_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->north_velocity_std << ","
+				<< std::setw(10) << std::setprecision(4) << msg->up_velocity_std << ","
+				<< std::setw(14) << std::setprecision(9) << msg->latitude << ","
+				<< std::setw(14) << std::setprecision(9) << msg->longitude << ","
+				<< std::setw(10) << std::setprecision(4) << msg->altitude + msg->undulation << ","
+				<< "0" << "0" << std::endl;
+		}
 	}
 
 
@@ -1286,6 +1443,23 @@ void outpointgnss(std::ofstream& kmloutput, const novatel_gps_msgs::BestPos &msg
 		<< "</Placemark>" << std::endl;
 
 
+
+
+
+	output_gnssposvel << std::setw(4) << msg_pos.novatel_msg_header.gps_week_num << ","
+		<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg_pos.novatel_msg_header.gps_seconds << ","
+		<< std::setw(14) << std::setprecision(9) << msg_pos.lat << ","
+		<< std::setw(14) << std::setprecision(9) << msg_pos.lon << ","
+		<< std::setw(10) << std::setprecision(4) << msg_pos.height + msg_pos.undulation << ","
+		<< std::setw(10) << std::setprecision(4) << msg_pos.lat_sigma << ","
+		<< std::setw(10) << std::setprecision(4) << msg_pos.lon_sigma << ","
+		<< std::setw(10) << std::setprecision(4) << msg_pos.height_sigma << ","
+		<< msg_pos.position_type_int << ","
+		<< std::setw(10) << std::setprecision(4) << north_velocity << ","
+		<< std::setw(10) << std::setprecision(4) << east_velocity << ","
+		<< std::setw(10) << std::setprecision(4) << up_velocity << ","
+		<< std::setw(10) << std::setprecision(4) << msg_vel.track_ground
+		<< std::endl;
 /*
 	kmloutput << "<description><![CDATA[" << std::endl
 		<< "<TABLE border=\"1\" width=\"100%\" Align=\"center\">" << std::endl
@@ -1694,6 +1868,9 @@ bool savegnsskml(const std::vector<novatel_gps_msgs::BestPos> &msg_pos,
 
 				outpointgnss(output_gnss_kml, msg_pos[i], msg_vel[j],
 					"", pcolor, outalt, outtime, number);
+
+
+
 				j++;
 			}
 		}
@@ -1814,6 +1991,8 @@ bool savegnssposkml(const std::vector<novatel_gps_msgs::BestPos> &msg_pos,
 				}
 				outpointgnsspos(output_gnss_kml, msg_pos[i], "", pcolor1, 0, 1, number);
 
+
+
 			}
 		}
 		output_gnss_kml << "</Folder>" << std::endl;
@@ -1834,17 +2013,23 @@ bool file_close()
 	if (publish_gnss_positions_) output_gnss.close();
 	if (pubilsh_gnss_vel_) output_gnss_vel.close();
 	if (publish_aceinna_imu_)   output_imu.close();
+	if (publish_odometer_imu_)   output_odo.close();
+
 	if (publish_imu_messages_)   output_imu.close();
 	if (publish_ins_)  output_ins.close();
 	if (publish_inspvax_)  output_ins.close();
 
 	if (publish_process_) output_process.close();
+	if (publish_gnss_) output_gnssposvel.close();
 	if (publish_kml_)
 	{
 		output_gnss_kml.close();
 		output_ins_kml.close();
 	}
-	if (!output_GGA_GPS) fclose(output_GGA_GPS);
+	if (output_GGA_GPS) fclose(output_GGA_GPS);
+	if (output_GGA_INS) fclose(output_GGA_INS);
+	if (output_gnss_csv.is_open()) output_gnss_csv.close();
+	if (output_ins_csv.is_open()) output_ins_csv.close();
 
 	return ret;
 }

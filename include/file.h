@@ -29,11 +29,13 @@
 #include "include/msg/velocity.h"
 #include "include/msg/inspva.h"
 #include "include/msg/inspvax.h"
+#include "include/msg/odometer.h"
 #include "rtklib/rtklib.h"
 
 #define ACEINNA 0
 #define NOVATEL 1
 
+extern bool publish_gnss_;
 extern bool publish_gnss_positions_ ;
 extern bool pubilsh_gnss_vel_ ;
 extern bool publish_aceinna_imu_;
@@ -67,8 +69,10 @@ bool traceimu(novatel_gps_msgs::RawimuPtr msg);
 
 bool tracenovatelimu(novatel_gps_msgs::RawimusxPtr msg);
 
+bool traceodometer(novatel_gps_msgs::OdometerPtr msg);
 
-bool tracegnss(novatel_gps_msgs::BestPosPtr msg);
+
+bool tracegnss(novatel_gps_msgs::BestPosPtr msg,int ID);
 
 bool tracegnssvel(novatel_gps_msgs::VelocityPtr msg);
 

@@ -67,6 +67,7 @@
 #include <include/parsers/inscov.h>
 #include <include/parsers/rawimusx.h>
 #include <include/parsers/rawimu.h>
+#include <include/parsers/odometer.h>
 
 
 #define M_PI (3.1415926)
@@ -375,6 +376,8 @@ namespace novatel_gps_driver
       TrackstatParser trackstat_parser_;
 	  RawimusxParser rawimusx_parser_;
 	  RawimuParser rawimu_parser_;
+	  OdometerParser odometer_parser_;
+
 
 
 

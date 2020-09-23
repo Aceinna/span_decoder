@@ -146,6 +146,7 @@
     <ClInclude Include="include\msg\messageheader.h" />
     <ClInclude Include="include\msg\heading2.h" />
     <ClInclude Include="include\msg\inspvax.h" />
+    <ClInclude Include="include\msg\odometer.h" />
     <ClInclude Include="include\msg\rangecmp.h" />
     <ClInclude Include="include\msg\rangeinformation.h" />
     <ClInclude Include="include\msg\rawimu.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="include\parsers\inspvax.h" />
     <ClInclude Include="include\parsers\insstdev.h" />
     <ClInclude Include="include\parsers\message_parser.h" />
+    <ClInclude Include="include\parsers\odometer.h" />
     <ClInclude Include="include\parsers\parse_exception.h" />
     <ClInclude Include="include\parsers\parsing_utils.h" />
     <ClInclude Include="include\parsers\range.h" />
@@ -213,6 +215,7 @@
     <ClCompile Include="src\parsers\inspva.cpp" />
     <ClCompile Include="src\parsers\inspvax.cpp" />
     <ClCompile Include="src\parsers\insstdev.cpp" />
+    <ClCompile Include="src\parsers\odometer.cpp" />
     <ClCompile Include="src\parsers\parsing_utils.cpp" />
     <ClCompile Include="src\parsers\range.cpp" />
     <ClCompile Include="src\parsers\rangecmp.cpp" />
