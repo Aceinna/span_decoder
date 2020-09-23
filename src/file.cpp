@@ -1614,6 +1614,8 @@ void outpointgnsspos(std::ofstream& kmloutput, const novatel_gps_msgs::BestPos &
 		<< "</Point>" << std::endl
 		<< "</Placemark>" << std::endl;
 }
+
+#define INS_KML_OUTPUT_DATARATE (1.0)
 /* convert to google earth kml file --------------------------------------------
 * convert solutions to google earth kml file
 * args   : char   *infile   I   input solutions file
@@ -1665,7 +1667,7 @@ bool saveinskml(const std::vector<novatel_gps_msgs::Inspva> &msg, int tcolor,
 		{
 			//设置输出频率,保持1Hz输出频率，并显示头尾
 			if (i == 0 || i == msg.size() - 1 ||
-				fmod(msg[i].novatel_msg_header.gps_seconds + 0.0005, 0.2) < 0.005)
+				fmod(msg[i].novatel_msg_header.gps_seconds + 0.0005, INS_KML_OUTPUT_DATARATE) < 0.005)
 			{
 				int number = i + 1;
 				if (i == 1) { number = 1; }
@@ -1753,7 +1755,7 @@ bool saveinspvaxkml(const std::vector<novatel_gps_msgs::Inspvax> &msg, int tcolo
 		{
 			//设置输出频率,保持1Hz输出频率，并显示头尾
 			if (i == 0 || i == msg.size() - 1 ||
-				fmod(msg[i].novatel_msg_header.gps_seconds + 0.0005, 0.2) < 0.005)
+				fmod(msg[i].novatel_msg_header.gps_seconds + 0.0005, INS_KML_OUTPUT_DATARATE) < 0.005)
 			{
 				int number = i + 1;
 				if (i == 1) { number = 1; }
