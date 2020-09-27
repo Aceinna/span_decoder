@@ -923,7 +923,7 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 	//	msg->novatel_msg_header.gps_week_num = firstgnssweek;
 	//}
 
-	if (publish_gnss_gga_ &&fabs(msg->latitude) > 0.001 
+	if (publish_ins_gga_ &&fabs(msg->latitude) > 0.001
 		&& (msg->ins_status_int == 3 || msg->ins_status_int == 6 || msg->ins_status_int == 7))
 	{
 		double leverarm_v[3] = { 0.0,0.0, 0.0};
@@ -944,7 +944,7 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 		unsigned char ggaBuffer[400] = { 0 };
 		int type = getpostype(msg->position_type_int,  1);
 		int len = outnmea_gga(ggaBuffer, msg->novatel_msg_header.gps_seconds, type, pos, 10, 1.0, 1.0);
-		fprintf(output_GGA_GPS, "%s", ggaBuffer);
+		fprintf(output_GGA_INS, "%s", ggaBuffer);
 	}
 
 	if (fabs(msg->latitude) > 0.001

@@ -46,6 +46,7 @@ extern bool publish_kml_ ;
 extern bool publish_inspvax_ ;
 extern bool publish_imu_messages_ ;
 extern bool publish_gps_bin ;
+extern bool publish_ins_gga_;
 
 extern int FILE_TYPE ;
 

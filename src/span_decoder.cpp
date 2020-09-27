@@ -192,6 +192,7 @@ int main(int argc, char **argv)
 		publish_inspvax_ = false;
 		publish_imu_messages_ = false;
 		publish_gps_bin = false;
+		publish_ins_gga_ = true;
 	}
 	else if (FILE_TYPE = NOVATEL)
 	{
@@ -206,6 +207,7 @@ int main(int argc, char **argv)
 		publish_inspvax_ = true;
 		publish_imu_messages_ = true;
 		publish_gps_bin = false;
+		publish_ins_gga_ = true;
 	}
 
 	decode_span(inutfilename);
