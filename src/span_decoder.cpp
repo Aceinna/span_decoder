@@ -205,6 +205,8 @@ int main(int argc, char **argv)
 		publish_kml_ = true;
 
 		publish_inspvax_ = true;
+		publish_heading_ = true;
+		publish_heading2_ = true;
 		publish_imu_messages_ = true;
 		publish_gps_bin = false;
 		publish_ins_gga_ = true;

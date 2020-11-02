@@ -329,6 +329,8 @@ bool publish_gnss_ = true;
 bool publish_kml_ = true;
 bool publish_gnss_gga_ = false;
 bool publish_inspvax_ = false;
+bool publish_heading_ = false;
+bool publish_heading2_ = false;
 bool publish_imu_messages_ = false;
 bool publish_gps_bin = false;
 bool publish_gnss_csv = false;
@@ -339,6 +341,8 @@ std::ofstream output_gnss_vel;
 std::ofstream output_imu;
 std::ofstream output_odo;
 std::ofstream output_ins;
+std::ofstream output_heading;
+std::ofstream output_heading2;
 std::ofstream output_process;
 
 std::ofstream output_gnssposvel;
@@ -356,6 +360,8 @@ std::vector <novatel_gps_msgs::BestPos> gnss_msgs_;
 std::vector <novatel_gps_msgs::Velocity> gnssvel_msgs_;
 std::vector <novatel_gps_msgs::Inspva> ins_msgs_;
 std::vector <novatel_gps_msgs::Inspvax> inspvax_msgs_;
+std::vector <novatel_gps_msgs::Heading2> heading2_msgs_;
+std::vector <novatel_gps_msgs::DualAntennaHeading> dual_antenna_heading_msgs_;
 
 
 #define HEADKML1 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -405,6 +411,10 @@ bool file_open(const std::string input_fname)
 
 
 	if (publish_inspvax_)  output_ins.open(fname + "-ins.txt");
+
+	if (publish_heading_) output_heading.open(fname + "-heading.txt");
+
+	if (publish_heading2_) output_heading2.open(fname + "-heading2.txt");
 
 	if (publish_process_) output_process.open(fname + "-process");
 
@@ -895,6 +905,64 @@ bool traceins(novatel_gps_msgs::InspvaPtr msg)
 			<< std::setw(14) << std::setprecision(9) << msg->pitch << ","
 			<< std::setw(14) << std::setprecision(9) << msg->azimuth << ","
 			<< msg->status_int
+			<< std::endl;
+	}
+
+	ret = true;
+	return ret;
+}
+
+bool traceheading(novatel_gps_msgs::DualAntennaHeadingPtr msg)
+{
+	int ret = false;
+
+	if (publish_kml_)
+	{
+		dual_antenna_heading_msgs_.push_back(*msg);
+	}
+
+	if (publish_heading_)
+	{
+		output_heading << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+			/*
+			<< std::setw(20) << msg->solution_status << ","
+			<< std::setw(14) << msg->position_type << ","
+			*/
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
+			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch
+			<< std::endl;
+	}
+
+	ret = true;
+	return ret;
+}
+
+bool traceheading2(novatel_gps_msgs::Heading2Ptr msg)
+{
+	int ret = false;
+
+	if (publish_kml_)
+	{
+		heading2_msgs_.push_back(*msg);
+	}
+
+	if (publish_heading2_)
+	{
+		output_heading2 << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+			/*
+			<< std::setw(20) << msg->solution_status << ","
+			<< std::setw(14) << msg->position_type << ","
+			*/
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
+			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch
 			<< std::endl;
 	}
 
@@ -2020,6 +2088,8 @@ bool file_close()
 	if (publish_imu_messages_)   output_imu.close();
 	if (publish_ins_)  output_ins.close();
 	if (publish_inspvax_)  output_ins.close();
+	if (publish_heading_)  output_heading.close();
+	if (publish_heading2_)  output_heading2.close();
 
 	if (publish_process_) output_process.close();
 	if (publish_gnss_) output_gnssposvel.close();

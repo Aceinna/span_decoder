@@ -21,6 +21,9 @@ namespace novatel_gps_msgs
 
 		std::string position_type;
 
+		int32 solution_status_int;
+		int32 position_type_int;
+
 		float32 baseline_length;         //Baseline length (m)
 		float32 heading;                 //Heading in degrees [0,360)
 		float32 pitch;                   //Pitch in degrees +- 90

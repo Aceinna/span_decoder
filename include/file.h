@@ -29,6 +29,8 @@
 #include "include/msg/velocity.h"
 #include "include/msg/inspva.h"
 #include "include/msg/inspvax.h"
+#include "include/msg/dualantennaheading.h"
+#include "include/msg/heading2.h"
 #include "include/msg/odometer.h"
 #include "rtklib/rtklib.h"
 
@@ -44,6 +46,8 @@ extern bool publish_process_ ;
 extern bool publish_kml_ ;
 
 extern bool publish_inspvax_ ;
+extern bool publish_heading_;
+extern bool publish_heading2_;
 extern bool publish_imu_messages_ ;
 extern bool publish_gps_bin ;
 extern bool publish_ins_gga_;
@@ -78,6 +82,10 @@ bool tracegnss(novatel_gps_msgs::BestPosPtr msg,int ID);
 bool tracegnssvel(novatel_gps_msgs::VelocityPtr msg);
 
 bool traceins(novatel_gps_msgs::InspvaPtr msg);
+
+bool traceheading(novatel_gps_msgs::DualAntennaHeadingPtr msg);
+
+bool traceheading2(novatel_gps_msgs::Heading2Ptr msg);
 
 bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg);
 

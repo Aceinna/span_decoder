@@ -75,6 +75,7 @@ namespace novatel_gps_driver
       throw ParseException(error.str());
     }
     ros_msg->solution_status = SOLUTION_STATUSES[solution_status];
+	ros_msg->solution_status_int = solution_status;
     
     uint16_t pos_type = ParseUInt16(&bin_msg.data_[4]);
     if (pos_type > MAX_POSITION_TYPE)
@@ -84,6 +85,8 @@ namespace novatel_gps_driver
       throw ParseException(error.str());
     }
     ros_msg->position_type = POSITION_TYPES[pos_type];
+	ros_msg->position_type_int = pos_type;
+
 
     ros_msg->baseline_length = ParseFloat(&bin_msg.data_[8]);
 

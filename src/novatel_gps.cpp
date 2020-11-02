@@ -395,16 +395,22 @@ namespace novatel_gps_driver
       }
       case Heading2Parser::MESSAGE_ID:
       {
-	novatel_gps_msgs::Heading2Ptr heading = heading2_parser_.ParseBinary(msg);
-        heading2_msgs_.push_back(heading);
+		novatel_gps_msgs::Heading2Ptr heading = heading2_parser_.ParseBinary(msg);
+		traceheading2(heading);
         break;
       }
       case DualAntennaHeadingParser::MESSAGE_ID:
       {
         novatel_gps_msgs::DualAntennaHeadingPtr heading = dual_antenna_heading_parser_.ParseBinary(msg);
-        dual_antenna_heading_msgs_.push_back(heading);
+		traceheading(heading);
         break;
       }
+	  case 971:
+	  {
+		novatel_gps_msgs::DualAntennaHeadingPtr heading = dual_antenna_heading_parser_.ParseBinary(msg);
+		traceheading(heading);
+		break;
+	  }
       case CorrImuDataParser::MESSAGE_ID:
       {
         novatel_gps_msgs::CorrectedImuDataPtr imu = corrimudata_parser_.ParseBinary(msg);
