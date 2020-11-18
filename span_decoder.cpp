@@ -242,12 +242,12 @@ static void deg2dms(double deg, double* dms, int ndec)
 	dms[0] *= sign;
 }
 
-static int print_nmea_gga(gtime_t time, double* xyz, int nsat, int type, double dop, double age, char* buff)
+static int print_nmea_gga(gtime_t time, double* blh, int nsat, int type, double dop, double age, char* buff)
 {
 	double h, ep[6], pos[3], dms1[3], dms2[3];
 	char* p = (char*)buff, * q, sum;
 
-	if ((xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) < 1.0)
+	if ((blh[0] * blh[0] + blh[1] * blh[1] + blh[2] * blh[2]) < 1.0)
 	{
 		p += sprintf(p, "$GPGGA,,,,,,,,,,,,,,");
 		for (q = (char*)buff + 1, sum = 0; *q; q++)
@@ -263,7 +263,7 @@ static int print_nmea_gga(gtime_t time, double* xyz, int nsat, int type, double 
 		if (ep[3] == 10.0 && ep[4] == 29.0 && fabs(ep[5] - 46.1) < 0.01)
 			sss = 1;
 #endif
-		pos[0] = xyz[0]; pos[1] = xyz[1]; pos[2] = xyz[2];
+		pos[0] = blh[0]; pos[1] = blh[1]; pos[2] = blh[2];
 		h = 0.0; //geoidh(pos);
 		deg2dms(fabs(pos[0]), dms1, 7);
 		deg2dms(fabs(pos[1]), dms2, 7);
@@ -1156,23 +1156,241 @@ void decode_span_dirctory(const char* dirname, const char* fExt, int format, int
 	return;
 }
 
+static void span_csv_to_kml_new(const char* fname_span)
+{
+	FILE* fpkml = NULL, * fpspan = NULL;
+	FILE* fNMEA = NULL;
+	FILE* fCSV = NULL;
+	FILE* fIMU = NULL;
+
+	char fileName[255] = { 0 };
+	char outfilename[255] = { 0 };
+	char buffer[1024] = { 0 };
+
+	fpspan = fopen(fname_span, "r");
+
+	if (fpspan == NULL) return;
+
+	strncpy(fileName, fname_span, strlen(fname_span));
+	char* result1 = strrchr(fileName, '.');
+	if (result1 != NULL) result1[0] = '\0';
+
+	sprintf(outfilename, "%s.kml", fileName);
+	fpkml = fopen(outfilename, "w");
+
+	sprintf(outfilename, "%s.nmea", fileName);
+	fNMEA = fopen(outfilename, "w");
+
+	sprintf(outfilename, "%s.csv", fileName);
+	fCSV = fopen(outfilename, "w");
+
+	sprintf(outfilename, "%s-imu.csv", fileName);
+	fIMU = fopen(outfilename, "w");
+
+	//B-G-R white green light-yellow  red yellow cyan
+	const char* color[] = { "ffffffff","ff008800","ff00aaff","ff0000ff","ff00ffff","ffff00ff" };
+	fprintf(fpkml, "%s\n%s\n", HEADKML1, HEADKML2);
+	fprintf(fpkml, "<Document>\n");
+	for (int i = 0; i < 6; i++) {
+		fprintf(fpkml, "<Style id=\"P%d\">\n", i);
+		fprintf(fpkml, "  <IconStyle>\n");
+		fprintf(fpkml, "    <color>%s</color>\n", color[i]);
+		fprintf(fpkml, "    <scale>%.1f</scale>\n", i == 0 ? SIZR : SIZP);
+		fprintf(fpkml, "    <Icon><href>%s</href></Icon>\n", MARKICON);
+		fprintf(fpkml, "  </IconStyle>\n");
+		fprintf(fpkml, "</Style>\n");
+	}
+
+	char* val[MAXFIELD];
+	char str[256] = "";
+
+	while (!feof(fpspan))
+	{
+		memset(buffer, 0, sizeof(buffer));
+
+		fgets(buffer, sizeof(buffer), fpspan);
+		if (strlen(buffer) <= 0) continue;
+
+		int wk = 0;
+		double ws = 0.0;
+		double blh[3] = { 0 };
+		double vel[3] = { 0 };
+		double rpy[3] = { 0 };
+
+		int rtk_type = 0;
+		int ins_type = 0;
+
+		if (strstr(buffer, "#INSPVAXA") != NULL)
+		{
+
+			if (strstr(buffer, "RTKFLOAT") != NULL)
+				rtk_type = 5;
+			if (strstr(buffer, "RTKFIXED") != NULL)
+				rtk_type = 4;
+
+			if (strstr(buffer, "INS_ALIGNING") != NULL)
+				rtk_type = 1;
+			if (strstr(buffer, "INS_ALIGNMENT_COMPLETE") != NULL)
+				rtk_type = 2;
+			if (strstr(buffer, "INS_SOLUTION_GOOD") != NULL)
+				rtk_type = 3;
+
+			parse_fields(buffer, val);
+
+
+			wk = atoi(val[5]);
+			ws = atof(val[6]);
+			blh[0] = atof(val[11]);
+			blh[1] = atof(val[12]);
+			blh[2] = atof(val[13]) + atof(val[14]);
+
+			vel[0] = atof(val[15]);
+			vel[1] = atof(val[16]);
+			vel[2] = atof(val[17]);
+			rpy[0] = atof(val[18]);
+			rpy[1] = atof(val[19]);
+			rpy[2] = atof(val[20]);
+
+		}
+		else if (strstr(buffer, "INSPVASA") != NULL)
+		{
+			//%INSPVASA,2131,262114.200;2131,262114.195274573,37.381106364,-121.941566068,-22.991128443,0.000350515,-0.000570366,-0.000220805,-1.365684175,-0.127603859,335.514427611,INS_ALIGNMENT_COMPLETE*05b64398
+
+			parse_fields(buffer, val);
+
+			wk = atoi(val[1]);
+			ws = atof(val[3]);
+			blh[0] = atof(val[4]);
+			blh[1] = atof(val[5]);
+			blh[2] = atof(val[6]);
+
+			vel[0] = atof(val[7]);
+			vel[1] = atof(val[8]);
+			vel[2] = atof(val[9]);
+			rpy[0] = atof(val[10]);
+			rpy[1] = atof(val[11]);
+			rpy[2] = atof(val[12]);
+		}
+		else if (strstr(buffer, "GGA") != NULL)
+		{
+			fprintf(fNMEA, "%s", buffer);
+			continue;
+		}
+		else if (strstr(buffer, "RAWIMUSXA") != NULL)
+		{
+			parse_fields(buffer, val);
+
+			wk = atoi(val[4]);
+			ws = atof(val[5]);
+
+			int fxyz[3] = { 0 };
+			int wxyz[3] = { 0 };
+
+			fxyz[0] = atoi(val[7]);
+			fxyz[1] = atoi(val[8]);
+			fxyz[2] = atoi(val[9]);
+			wxyz[0] = atoi(val[10]);
+			wxyz[1] = atoi(val[11]);
+			wxyz[2] = atoi(val[12]);
+
+			if (fIMU)
+			{
+				fprintf(fIMU, "%10.3f,%i,%i,%i,%i,%i,%i\n", ws, fxyz[0], fxyz[1], fxyz[2], wxyz[0], wxyz[1], wxyz[2]);
+			}
+
+			continue;
+		}
+		else
+			continue;
+
+		if (fCSV)
+		{
+			fprintf(fCSV, "%10.3f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%10.4f,%i,%i\n", ws, blh[0], blh[1], blh[2], vel[0], vel[1], vel[2], rpy[0], rpy[1], rpy[2], rtk_type, ins_type);
+		}
+
+
+		gtime_t tm = gpst2time(wk, ws);
+		double ep[6] = { 0 };
+
+		time2epoch(tm, ep);
+
+		if (fNMEA)
+		{
+			//char gga_buff[255] = { 0 };
+			//print_nmea_gga(tm, blh, 10, rtk_type, 1.0, 0.0, gga_buff);
+			//fprintf(fNMEA, "%s", gga_buff);
+		}
+
+		if (fpkml != NULL) {
+			fprintf(fpkml, "<Placemark>\n");
+			fprintf(fpkml, "<TimeStamp><when>%s</when></TimeStamp>\n", str);
+			fprintf(fpkml, "<description><![CDATA[\n");
+			fprintf(fpkml, "<TABLE border=\"1\" width=\"100%\" Align=\"center\">\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT>\n");
+			fprintf(fpkml, "<TR ALIGN = RIGHT><TD ALIGN = LEFT>Time:</TD><TD>");
+			fprintf(fpkml, "%4d</TD><TD>", wk);
+			fprintf(fpkml, "%11.4f</TD><TD>", ws);
+			fprintf(fpkml, "%02.0f:%02.0f:%06.3f</TD><TD>", ep[3], ep[4], ep[5]);
+			fprintf(fpkml, "%2d/%2d/%3d</TD></TR>\n", (int)ep[0], (int)ep[1], (int)ep[2]);
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Position:</TD><TD>");
+			fprintf(fpkml, "%11.7f</TD><TD>", blh[0]);
+			fprintf(fpkml, "%11.7f</TD><TD>", blh[1]);
+			fprintf(fpkml, "%8.4f</TD>", blh[2]);
+			fprintf(fpkml, "<TD>(DMS,m)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Vel(N,E,D):</TD><TD>");
+			fprintf(fpkml, "%8.4f</TD><TD>", vel[0]);
+			fprintf(fpkml, "%8.4f</TD><TD>", vel[1]);
+			fprintf(fpkml, "%8.4f</TD>", vel[2]);
+			fprintf(fpkml, "<TD>(m/s)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Att(r,p,y):</TD><TD>");
+			fprintf(fpkml, "%8.4f</TD><TD>", rpy[0]);
+			fprintf(fpkml, "%8.4f</TD><TD>", rpy[1]);
+			fprintf(fpkml, "%8.4f</TD>", rpy[2]);
+			fprintf(fpkml, "<TD>(deg)</TD></TR>\n");
+			fprintf(fpkml, "<TR ALIGN=RIGHT><TD ALIGN=LEFT>Misc Info:</TD><TD>");
+			fprintf(fpkml, "%d</TD><TD>", 0);
+			fprintf(fpkml, "%d</TD><TD>", 0);
+			fprintf(fpkml, "%d</TD>", 0);
+			fprintf(fpkml, "<TD></TD></TR>\n");
+			fprintf(fpkml, "</TABLE>\n");
+			fprintf(fpkml, "]]></description>\n");
+
+			fprintf(fpkml, "<styleUrl>#P%d</styleUrl>\n", 2);
+			fprintf(fpkml, "<Style>\n");
+			fprintf(fpkml, "<IconStyle>\n");
+			fprintf(fpkml, "<heading>%f</heading>\n", rpy[2]);
+			fprintf(fpkml, "</IconStyle>\n");
+			fprintf(fpkml, "</Style>\n");
+
+
+			fprintf(fpkml, "<Point>\n");
+			fprintf(fpkml, "<coordinates>%13.9f,%12.9f,%5.3f</coordinates>\n", blh[1],
+				blh[0], blh[2]);
+			fprintf(fpkml, "</Point>\n");
+			fprintf(fpkml, "</Placemark>\n");
+		}
+
+	}
+
+
+
+	if (fpkml != NULL) {
+		fprintf(fpkml, "</Document>\n");
+		fprintf(fpkml, "</kml>\n");
+		fclose(fpkml);
+	}
+
+	if (fNMEA) fclose(fNMEA);
+	if (fCSV) fclose(fCSV);
+	if (fpspan != NULL) fclose(fpspan);
+
+	return;
+}
+
+
 
 int main(int argc, char *argv[])
 {
-	/*char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
-	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";
-	decode_span("C:\\Users\\Administrator\\Documents\\0502\\novatel_CPT7-2020_02_19_16_30_29.ASC", SPAN_CPT7, 100.0, 0);*/
-
-	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
-	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
-	//decode_span("C:\\Users\\da\\Documents\\312\\openrtk\\CompNovA\\novatel_CPT7-2019_11_08_15_48_34.ASC", SPAN_CPT7, 100.0, 0);
-	//decode_span("C:\\femtomes\\Rover.log", SPAN_ACEINNA, 1.0, 0);
-	//diff_with_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC","C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_CPT7-2019_10_16_20_31_52.ASC");
-
-	//diff_with_span(fname1, fname2);
-	//diff_with_span_rtk(fname1, fname2);
-
-	//span_csv_to_kml("E:\\data\\INS_ODO\\Process\\0827\\test1\\ref\\240.csv");
 	char fpath[256] = { 0 };
 
 	if (argc < 2) {
@@ -1183,7 +1401,4 @@ int main(int argc, char *argv[])
 	else {
 		span_csv_to_kml(argv[1]);
 	}
-
-
-	//decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
 }
