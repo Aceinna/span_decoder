@@ -154,10 +154,12 @@
     <ClInclude Include="include\msg\rtkpos.h" />
     <ClInclude Include="include\msg\rtkvel.h" />
     <ClInclude Include="include\msg\signalmark.h" />
+    <ClInclude Include="include\msg\velocity.h" />
     <ClInclude Include="include\nmea_sentence.h" />
     <ClInclude Include="include\novatel_gps.h" />
     <ClInclude Include="include\novatel_message_extractor.h" />
     <ClInclude Include="include\novatel_sentence.h" />
+    <ClInclude Include="include\parsers\bestgnssvel.h" />
     <ClInclude Include="include\parsers\bestpos.h" />
     <ClInclude Include="include\parsers\bestutm.h" />
     <ClInclude Include="include\parsers\bestvel.h" />
@@ -197,6 +199,7 @@
     <ClCompile Include="src\file.cpp" />
     <ClCompile Include="src\novatel_gps.cpp" />
     <ClCompile Include="src\novatel_message_extractor.cpp" />
+    <ClCompile Include="src\parsers\bestgnssvel.cpp" />
     <ClCompile Include="src\parsers\bestpos.cpp" />
     <ClCompile Include="src\parsers\bestutm.cpp" />
     <ClCompile Include="src\parsers\bestvel.cpp" />

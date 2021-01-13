@@ -26,6 +26,8 @@
 #include "include/msg/rawimu.h"
 #include "include/msg/rawimusx.h"
 #include "include/msg/bestpos.h"
+#include "include/msg/bestgnssvel.h"
+
 #include "include/msg/velocity.h"
 #include "include/msg/inspva.h"
 #include "include/msg/inspvax.h"

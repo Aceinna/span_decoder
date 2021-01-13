@@ -1,9 +1,10 @@
-#ifndef NOVATEL_MSGS_BESTVEL_H
+#ifndef NOVATEL_MSGS_BESTGNSSVEL_H
 #define NOVATEL_MSGS_BESTGNSSVEL_H
 #include <stdint.h>
 #include <string>
 
 #include "base.h"
+#include <boost/shared_ptr.hpp>
 #include "messageheader.h"
 
 using namespace base;
@@ -14,20 +15,26 @@ namespace novatel_gps_msgs
 	{
 		MessageHeader novatel_msg_header;
 
-		std::string ins_status;
+		std::string solution_status;
 
-		std::string position_type;
+		std::string velocity_type;
 
-		/*A measure of the latency in the velocity time tag inseconds.
-		It should be subtracted from the time to give improved results*/
+		//A measure of the latency in the velocity time tag in seconds.
 		float32 latency;
 
-		float32 age;               //Differential age in seconds
-		float64 hor_spd;           //Horizontal speed over ground, in metres per second
-		float64 trk_gnd;           //Actual direction of motion over ground (track over ground) with respect to True North, in degrees
-	   /*Vertical speed, in metres per second, where positive values indicate increasing altitude(up) and
-		negative values indicate decreasing altitude(down)*/
-		float64 vect_spd;
+		// Differential age in seconds
+		float32 age;
+
+		//Horizontal speed over ground, meters / second
+		float64 horizontal_speed;
+
+		//Direction of motion over ground with respect to true North, degrees
+		float64 track_ground;
+
+		//Vertical speed, where positive values correspond to increasing altitude, meters / second
+		float64 vertical_speed;
 	}BESTGNSSVEL;
+	typedef boost::shared_ptr< novatel_gps_msgs::BestGnssVel > BestGnssVelPtr;
+	typedef boost::shared_ptr< novatel_gps_msgs::BestGnssVel const> BestGnssVelConstPtr;
 }// end of namespace
 #endif

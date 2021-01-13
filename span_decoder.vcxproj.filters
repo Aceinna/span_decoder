@@ -204,6 +204,12 @@
     <ClInclude Include="include\parsers\odometer.h">
       <Filter>include\parsers</Filter>
     </ClInclude>
+    <ClInclude Include="include\parsers\bestgnssvel.h">
+      <Filter>include\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\msg\velocity.h">
+      <Filter>include\msg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="swri_util\string_util.cpp">
@@ -306,6 +312,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\parsers\odometer.cpp">
+      <Filter>src\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\bestgnssvel.cpp">
       <Filter>src\parsers</Filter>
     </ClCompile>
   </ItemGroup>

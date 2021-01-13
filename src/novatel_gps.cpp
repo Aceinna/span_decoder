@@ -393,6 +393,13 @@ namespace novatel_gps_driver
         //novatel_velocities_.push_back(velocity);
         break;
       }
+	  case BestGnssvelParser::MESSAGE_ID:
+	  {
+		  novatel_gps_msgs::VelocityPtr velocity = bestvel_parser_.ParseBinary(msg);
+		  tracegnssvel(velocity);
+		  //novatel_velocities_.push_back(velocity);
+		  break;
+	  }
       case Heading2Parser::MESSAGE_ID:
       {
 		novatel_gps_msgs::Heading2Ptr heading = heading2_parser_.ParseBinary(msg);

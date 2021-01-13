@@ -68,6 +68,8 @@
 #include <include/parsers/rawimusx.h>
 #include <include/parsers/rawimu.h>
 #include <include/parsers/odometer.h>
+#include <include/parsers/bestgnssvel.h>
+
 
 
 #define M_PI (3.1415926)

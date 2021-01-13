@@ -153,7 +153,9 @@ void decode_span(const std::string fname)
 	if (publish_inspvax_)
 	{
 		saveinspvaxkml(inspvax_msgs_, tcolor, pcolor, outalt, outtime);
-		savegnssposkml(gnss_msgs_, tcolor, pcolor, outalt, outtime);
+		//savegnssposkml(gnss_msgs_, tcolor, pcolor, outalt, outtime);
+		savegnsskml(gnss_msgs_, gnssvel_msgs_, tcolor, pcolor, outalt, outtime);
+
 		saveinskml(ins_msgs_, tcolor, pcolor, outalt, outtime);
 	}
 	else
@@ -183,7 +185,7 @@ int main(int argc, char **argv)
 	{
 		publish_gnss_ = true;
 		publish_gnss_positions_ = false;
-		pubilsh_gnss_vel_ = false;
+		pubilsh_gnss_vel_ = true;
 		publish_aceinna_imu_ = true;
 		publish_ins_ = true;
 		publish_process_ = true;
@@ -196,8 +198,9 @@ int main(int argc, char **argv)
 	}
 	else if (FILE_TYPE = NOVATEL)
 	{
+		publish_gnss_ = true;
 		publish_gnss_positions_ = true;
-		pubilsh_gnss_vel_ = false;
+		pubilsh_gnss_vel_ = true;
 		publish_aceinna_imu_ = false;
 		publish_ins_ = true;
 		publish_ins_ = false;

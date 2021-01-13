@@ -66,6 +66,8 @@ novatel_gps_msgs::VelocityPtr novatel_gps_driver::BestvelParser::ParseBinary(con
   ros_msg->novatel_msg_header.message_name = MESSAGE_NAME;
 
   uint16_t solution_status = ParseUInt16(&bin_msg.data_[0]);
+  ros_msg->solution_status_int = solution_status;
+
   if (solution_status > MAX_SOLUTION_STATUS)
   {
     std::stringstream error;
@@ -74,6 +76,8 @@ novatel_gps_msgs::VelocityPtr novatel_gps_driver::BestvelParser::ParseBinary(con
   }
   ros_msg->solution_status = SOLUTION_STATUSES[solution_status];
   uint16_t pos_type = ParseUInt16(&bin_msg.data_[4]);
+  ros_msg->velocity_type_int = pos_type;
+
   if (pos_type > MAX_POSITION_TYPE)
   {
     std::stringstream error;

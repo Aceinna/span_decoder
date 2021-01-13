@@ -850,7 +850,10 @@ bool tracegnssvel(novatel_gps_msgs::VelocityPtr msg)
 				<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
 				<< std::setw(14) << std::setprecision(9) << msg->horizontal_speed << ","
 				<< std::setw(14) << std::setprecision(9) << msg->track_ground << ","
-				<< std::setw(10) << std::setprecision(4) << msg->vertical_speed
+				<< std::setw(10) << std::setprecision(4) << msg->vertical_speed << ","
+				<< std::setw(10) << std::setprecision(4) << msg->latency << ","
+				<< std::setw(8) << msg->solution_status_int << ","
+				<< std::setw(8) << msg->velocity_type_int 
 				<< std::endl;
 		}
 	}
@@ -863,7 +866,10 @@ bool tracegnssvel(novatel_gps_msgs::VelocityPtr msg)
 				<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
 				<< std::setw(14) << std::setprecision(9) << msg->horizontal_speed << ","
 				<< std::setw(14) << std::setprecision(9) << msg->track_ground << ","
-				<< std::setw(10) << std::setprecision(4) << msg->vertical_speed
+				<< std::setw(10) << std::setprecision(4) << msg->vertical_speed << ","
+				<< std::setw(10) << std::setprecision(4) << msg->latency << ","
+				<< std::setw(8) << msg->solution_status_int << ","
+				<< std::setw(8) << msg->velocity_type_int 
 				<< std::endl;
 		}
 	}
@@ -967,11 +973,27 @@ bool traceheading(novatel_gps_msgs::DualAntennaHeadingPtr msg)
 			<< std::setw(20) << msg->solution_status << ","
 			<< std::setw(14) << msg->position_type << ","
 			*/
-			<< std::setw(8) << msg->solution_status_int << ","
-			<< std::setw(8) << msg->position_type_int << ","
+
 			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
 			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
-			<< std::setw(14) << std::setprecision(5) << msg->pitch
+			<< std::setw(14) << std::setprecision(5) << msg->pitch << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading_sigma << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch_sigma << ","
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
+			<< std::endl;
+	}
+	if (publish_process_)
+	{
+		output_process << "$GPHEAD2," << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading_sigma << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch_sigma << ","
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
 			<< std::endl;
 	}
 
@@ -996,14 +1018,29 @@ bool traceheading2(novatel_gps_msgs::Heading2Ptr msg)
 			<< std::setw(20) << msg->solution_status << ","
 			<< std::setw(14) << msg->position_type << ","
 			*/
-			<< std::setw(8) << msg->solution_status_int << ","
-			<< std::setw(8) << msg->position_type_int << ","
+
 			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
 			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
-			<< std::setw(14) << std::setprecision(5) << msg->pitch
+			<< std::setw(14) << std::setprecision(5) << msg->pitch << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading_sigma << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch_sigma << ","
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
 			<< std::endl;
 	}
-
+	if (publish_process_)
+	{
+		output_process << "$GPHEAD2," << std::setw(4) << msg->novatel_msg_header.gps_week_num << ","
+			<< std::setw(10) << std::setiosflags(std::ios::fixed) << std::setprecision(4) << msg->novatel_msg_header.gps_seconds << ","
+			<< std::setw(10) << std::setprecision(5) << msg->baseline_length << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch << ","
+			<< std::setw(14) << std::setprecision(5) << msg->heading_sigma << ","
+			<< std::setw(14) << std::setprecision(5) << msg->pitch_sigma << ","
+			<< std::setw(8) << msg->solution_status_int << ","
+			<< std::setw(8) << msg->position_type_int << ","
+			<< std::endl;
+	}
 	ret = true;
 	return ret;
 }
@@ -1100,7 +1137,8 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 			<< std::setw(14) << std::setprecision(9) << msg->roll << ","
 			<< std::setw(14) << std::setprecision(9) << msg->pitch << ","
 			<< std::setw(14) << std::setprecision(9) << msg->azimuth << ","
-			<< msg->ins_status_int
+			<< msg->ins_status_int << ","
+			<< msg->position_type_int
 			<< std::endl;
 	}
 	if (publish_process_)
@@ -1116,7 +1154,8 @@ bool traceinspvax(novatel_gps_msgs::InspvaxPtr msg)
 			<< std::setw(14) << std::setprecision(9) << msg->roll << ","
 			<< std::setw(14) << std::setprecision(9) << msg->pitch << ","
 			<< std::setw(14) << std::setprecision(9) << msg->azimuth << ","
-			<< msg->ins_status_int
+			<< msg->ins_status_int << ","
+			<< msg->position_type_int
 			<< std::endl;
 	}
 
@@ -1548,8 +1587,40 @@ void outpointgnss(std::ofstream& kmloutput, const novatel_gps_msgs::BestPos &msg
 		<< "</Point>" << std::endl
 		<< "</Placemark>" << std::endl;
 
+	int type = 0;
 
-
+	if (FILE_TYPE == NOVATEL)
+	{
+		switch (msg_pos.position_type_int)
+		{
+		case 16:
+			//spp;
+			type = 1;
+			break;
+		case 17:
+			//rtd;
+			type = 2;
+			break;
+			//case 3:
+			//	//udr;
+			//	pcolor = 4;
+			//	break;
+		case 50:
+			//fix;
+			type = 4;
+			break;
+		case 34:
+			//float;
+			type = 5;
+			break;
+		default:
+			break;
+		}
+	}
+	else
+	{
+		type = msg_pos.position_type_int;
+	}
 
 
 	output_gnssposvel << std::setw(4) << msg_pos.novatel_msg_header.gps_week_num << ","
@@ -1560,7 +1631,7 @@ void outpointgnss(std::ofstream& kmloutput, const novatel_gps_msgs::BestPos &msg
 		<< std::setw(10) << std::setprecision(4) << msg_pos.lat_sigma << ","
 		<< std::setw(10) << std::setprecision(4) << msg_pos.lon_sigma << ","
 		<< std::setw(10) << std::setprecision(4) << msg_pos.height_sigma << ","
-		<< msg_pos.position_type_int << ","
+		<< type << ","
 		<< std::setw(10) << std::setprecision(4) << north_velocity << ","
 		<< std::setw(10) << std::setprecision(4) << east_velocity << ","
 		<< std::setw(10) << std::setprecision(4) << up_velocity << ","

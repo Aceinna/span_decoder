@@ -18,9 +18,12 @@ namespace novatel_gps_msgs
 		MessageHeader novatel_msg_header;
 
 		std::string solution_status;
+		std::int32_t solution_status_int;
+
 
 		std::string velocity_type;
-		
+		std::int32_t velocity_type_int;
+
 		//A measure of the latency in the velocity time tag in seconds.
 		float32 latency;
 
