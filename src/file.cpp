@@ -42,6 +42,8 @@
 #define ISA100C_GYRO 5.729577951308233E-08
 #define ISA100C_ACC 2.0E-8
 
+#define ACEINNA_GYRO   (0.005/64)  //
+#define ACEINNA_ACC    (0.005*9.80665/4000)  //
 
 #define CPT_GYRO   6.670106611340576E-09  /* 2^-33 * 180 /PI */
 
@@ -257,6 +259,7 @@ uint8_t UpdateMN(const double *BLH, double *M, double *N)
 static std::map<uint8, std::pair<std::vector<double>, std::string>> rates = {
   { 0,  std::pair<std::vector<double>, std::string>({100,2.0,100}, "Unknown") },
   { 1,  std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1700 AG11") },
+  { 3,  std::pair<std::vector<double>, std::string>({200,ACEINNA_GYRO,ACEINNA_ACC}, "Aceinna IMU") },
   { 4,  std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1700 AG17") },
   { 5,  std::pair<std::vector<double>, std::string>({100,100,100}, "Honeywell HG1700 CA29") },
   { 8,  std::pair<std::vector<double>, std::string>({200,100,100}, "Litton LN-200 (200hz model)") },
@@ -339,6 +342,8 @@ std::ifstream iput_file;
 std::ofstream output_gnss;
 std::ofstream output_gnss_vel;
 std::ofstream output_imu;
+//std::ofstream output_imu_bin;
+//FILE *fpw;
 std::ofstream output_odo;
 std::ofstream output_ins;
 std::ofstream output_heading;
@@ -401,6 +406,11 @@ bool file_open(const std::string input_fname)
 	if (pubilsh_gnss_vel_) output_gnss_vel.open(fname + "-gnssvel.txt");
 
 	if (publish_aceinna_imu_)   output_imu.open(fname + "-imu.txt");
+	//if (publish_aceinna_imu_)   //output_imu_bin.open(fname + "-imu.bin");
+	std::string outfilename1 = fname + "-imu1.bin";
+	//fopen_s(&fpw, outfilename1.c_str(), "wb");
+
+
 	if (publish_odometer_imu_)   output_odo.open(fname + "-odo.txt");
 
 	if (publish_imu_messages_)   output_imu.open(fname + "-imu.txt");
@@ -445,6 +455,7 @@ bool file_open(const std::string input_fname)
 static double lastlctime = 0;
 static double lastgnsstime = -1;
 //static int32_t firstgnssweek = -1;
+static int cout = 0;
 bool traceimu(novatel_gps_msgs::RawimuPtr msg)
 {
 	bool ret = false;
@@ -470,6 +481,33 @@ bool traceimu(novatel_gps_msgs::RawimuPtr msg)
 			<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->y_gyro))) << ","
 			<< std::setw(14) << std::setprecision(10) << *(reinterpret_cast<float *>(&(msg->z_gyro)))
 			<< std::endl;
+		double GPS_time =  msg->gps_seconds / 1000;
+		int32 scale = 1000000;
+		int32 lgx, lgy, lgz, lax, lay, laz;
+		 lgx= (int32)(*(reinterpret_cast<float *>(&(msg->x_gyro)))  * scale);
+		 lgy= (int32)(*(reinterpret_cast<float *>(&(msg->y_gyro)))  * scale);
+		 lgz= (int32)(*(reinterpret_cast<float *>(&(msg->z_gyro)))  * scale);
+		 lax= (int32)(*(reinterpret_cast<float *>(&(msg->x_accel))) * grav_WGS84  * scale);
+		 lay= (int32)(*(reinterpret_cast<float *>(&(msg->y_accel))) * grav_WGS84  * scale);
+		 laz= (int32)(*(reinterpret_cast<float *>(&(msg->z_accel))) * grav_WGS84  * scale);
+
+		 int8_t a = 0;
+
+		//output_imu_bin.write((char *)&(GPS_time), sizeof(base::float64));
+		//output_imu_bin.write((char *)&lgx, sizeof(base::int32));
+		//output_imu_bin.write((char *)&lgy, sizeof(base::int32));
+		//output_imu_bin.write((char *)&lgz, sizeof(base::int32));
+		//output_imu_bin.write((char *)&lax, sizeof(base::int32));
+		//output_imu_bin.write((char *)&lax, sizeof(base::int32));
+		//output_imu_bin.write((char *)&laz, sizeof(base::int32));
+
+		//fwrite(&GPS_time,sizeof(double), 1, fpw);
+		//fwrite(&lgx, sizeof(int32), 1, fpw);
+		//fwrite(&lgy, sizeof(int32), 1, fpw);
+		//fwrite(&lgz, sizeof(int32), 1, fpw);
+		//fwrite(&lax, sizeof(int32), 1, fpw);
+		//fwrite(&lax, sizeof(int32), 1, fpw);
+		//fwrite(&laz, sizeof(int32), 1, fpw);
 	}
 	if (publish_process_)
 	{
@@ -2083,6 +2121,12 @@ bool file_close()
 	if (publish_gnss_positions_) output_gnss.close();
 	if (pubilsh_gnss_vel_) output_gnss_vel.close();
 	if (publish_aceinna_imu_)   output_imu.close();
+	if (publish_aceinna_imu_)
+	{
+		//output_imu_bin.close();
+		//fclose(fpw);
+	}
+
 	if (publish_odometer_imu_)   output_odo.close();
 
 	if (publish_imu_messages_)   output_imu.close();
