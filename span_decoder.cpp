@@ -22,6 +22,7 @@
 #define SPAN_FLEX6 1
 #define SPAN_ACEINNA 2
 #define SPAN_ADI16488 3
+#define UB482 4
 
 #define HEADKML1 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 #define HEADKML2 "<kml xmlns=\"http://www.opengis.net/kml/2.2\">"
@@ -335,6 +336,8 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 
 	double time_vel[4] = { 0.0 };
 
+	double ws_pv = 0.0;
+
 	while (!feof(fdat))
 	{
 		fgets(buffer, sizeof(buffer), fdat);
@@ -383,6 +386,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) + atof(val[14]) };
 			double wn = atof(val[5]);
 			double ws = atof(val[6]);
+			
 			double rms[3] = { atof(val[16]), atof(val[17]), atof(val[18]) };
 			int type = 0;
 			if (strstr(val[10], "SINGLE") != NULL) type = 1;
@@ -400,10 +404,74 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			*/
 			continue;
 		}
+		if (strstr(val[0], "BESTPOSA") != NULL)
+		{
+			/*
+#BESTPOSA,COM1,0,36.0,FINE,2143,269380.800,136615,34,18;SOL_COMPUTED,SINGLE,31.49462671482,120.36342564250,5.5551,7.4383,WGS84,1.0661,1.1722,2.1196,"",0.000,0.000,40,28,28,24,0,06,03,d3*e4da69bc
+			*/
+			double blh[3] = { atof(val[11]), atof(val[12]), atof(val[13]) + atof(val[14]) };
+			double vel[3] = { 0.0 };
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			
+			double rms[3] = { atof(val[16]), atof(val[17]), atof(val[18]) };
+			int type = 0;
+			if (strstr(val[10], "SINGLE") != NULL) type = 1;
+			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
+			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
+			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
+
+			int out_data = fabs(floor(ws) - ws) < 0.001 ? 1:0;
+			if (fpos != NULL && out_data) {
+				ws_pv = ws;
+				fprintf(fpos, "%4.0f,%10.3f,%14.10f,%14.10f,%10.4f,%10.4f,%10.4f,%10.4f,%3i,"// /*%10.4f,%10.4f,%10.4f,%10.4f,*/"
+					, wn, ws, blh[0], blh[1], blh[2], rms[0], rms[1], rms[2], type
+					//, vel[0], vel[1], vel[2], -180.0
+				);
+			}
+			continue;
+		}
+		if (strstr(val[0], "BESTVELA") != NULL)
+		{
+			/*
+#BESTVELA,COM1,0,36.0,FINE,2143,269380.800,136615,28,18;SOL_COMPUTED,DOPPLER_VELOCITY,0.000,0.000,0.0032,306.503090,-0.0089,0001500024*a94a28f1
+			/* TODO, output to fpos
+			*/
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			float latency = atof(val[11]), vh = atof(val[13]), heading = atof(val[14]) * PI / 180.0, vu = atof(val[15]);
+			float hdg_deg = atof(val[14]);
+			float vn = vh * cos(heading);
+			float ve = vh * sin(heading);
+			if (fpos != NULL && ws == ws_pv) { // NEED RE-CHECK
+
+				fprintf(fpos, "%.3f,%.3f,%.3f,%.3f\n", ve, vn, vu, hdg_deg);
+			}
+			continue;
+		}
 		if (strstr(val[0], "HEADING2A") != NULL)
 		{
 			/*
 #HEADING2A,SPECIAL,0,23.5,FINESTEERING,2078,516279.000,02004000,1684,15826;SOL_COMPUTED,NARROW_INT,-1.000000000,239.906387329,-0.616668701,0.0,0.206709728,0.369018108,"H64Z","H64Z",32,29,29,23,04,01,15,33*272e3cb4
+			/* TODO, output to fpos
+			*/
+			double wn = atof(val[5]);
+			double ws = atof(val[6]);
+			float baseline_len = atof(val[10]);
+			float heading_da = atof(val[11]); // dual antenna heading
+			float pitch_da = atof(val[12]); // dual antenna pitch/roll, depend on antenna installation
+			int type = 0;
+			if (strstr(val[10], "SINGLE") != NULL) type = 1;
+			else if (strstr(val[10], "NARROW_INT") != NULL) type = 4;
+			else if (strstr(val[10], "NARROW_FLOAT") != NULL) type = 5;
+			else if (strstr(val[10], "PSRDIFF") != NULL) type = 2;
+			if (fhdg != NULL) fprintf(fhdg, "%4.0f,%10.3f,%.3f,%.3f,%.3f,%d\n", wn, ws, baseline_len, heading_da, pitch_da, type);
+			continue;
+		}
+		if (strstr(val[0], "HEADINGA") != NULL)
+		{
+			/*
+#HEADINGA,COM1,0,49.0,FINE,2143,269381.000,136814,43,18;SOL_COMPUTED,NARROW_INT,0.6786,46.4054,-0.6630,0.0000,0.3189,0.5865,"999",41,39,39,28,3,01,3,f3*821e4438
 			/* TODO, output to fpos
 			*/
 			double wn = atof(val[5]);
@@ -550,6 +618,50 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 		{
 			/*
 %INSPVASA,2083,374524.200;2083,374524.200000000,31.51668826020,120.38636567293,13.9998,13.1095,-12.9404,-0.0070,2.093819658,2.854168081,316.626703726,INS_SOLUTION_GOOD*8fc5adb1
+			*/
+			//if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
+			int wn = atoi(val[1]);
+			double ws = atof(val[3]);
+			double blh[3] = { atof(val[4]), atof(val[5]), atof(val[6]) };
+			if (blh[0] == 0.0 && blh[1] == 0.0 && blh[2] == 0.0) continue;
+			double vel_NEU[3] = { atof(val[7]), atof(val[8]), -atof(val[9]) };
+			double att[3] = { atof(val[10]), atof(val[11]), atof(val[12]) };
+
+			if (fins != NULL)
+			{
+				fprintf(fins, "%4i,%10.3f,%14.9f,%14.9f,%10.4f,%10.4f,%10.4f,%10.4f,%14.9f,%14.9f,%14.9f\n"
+					, wn, ws
+					, blh[0], blh[1], blh[2]
+					, vel_NEU[0], vel_NEU[1], vel_NEU[2]
+					, att[0], att[1], att[2]
+				);
+			}
+
+			//int solType = -1;
+			//if (strstr(val[10], "INS_PSRSP") != NULL) solType = 1;
+			//else if (strstr(val[10], "INS_PSRDIFF") != NULL) solType = 2;
+			//else if (strstr(val[10], "PSRDIFF") != NULL) solType = 2;
+			//else if (strstr(val[10], "PROPAGATED") != NULL) solType = 3;
+			//else if (strstr(val[10], "INS_RTKFLOAT") != NULL) solType = 5;
+			//else if (strstr(val[10], "INS_RTKFIXED") != NULL) solType = 4;
+			//else {
+			//	solType = 1;
+			//	//printf("not supported\n");
+			//}
+			/*strcpy(sol_status + strlen(sol_status), ",");
+			strcpy(sol_status + strlen(sol_status), val[10]);
+*/
+			float heading = 0.0f;
+			strcpy(sol_status, val[13]);
+#ifdef INSPVA_SHORT
+			print_kml_gga(fpkml, blh[0], blh[1], blh[2], solType, ws, heading, sol_status);
+#endif			
+			continue;
+		}
+		if (strstr(val[0], "INSPVAA") != NULL)
+		{
+			/*
+#INSPVAA,COM1,0,48.0,FINE,2142,381518.300,647042,12,18;2142,381518.300,31.50898694373,120.37280481075,9.6629,14.1262,15.7235,-0.7222,0.638765,-3.365489,50.477889,INS_SOLUTION_GOOD*5524a4dc
 			*/
 			//if (!strstr(val[9], "INS_ALIGNMENT_COMPLETE") && !strstr(val[9], "INS_SOLUTION_GOOD")) continue;
 			int wn = atoi(val[1]);
@@ -833,7 +945,7 @@ bool diff_test(const char* fname_sol, const char* fname_span)
 
 		ep[3] = atof(temp.substr(0, 3).c_str());
 		ep[4] = atof(temp.substr(3).c_str());
-		posdata[2] =-(ep[3] + ep[4] / 60.0) * PI / 180.0;
+		posdata[2] = -(ep[3] + ep[4] / 60.0) * PI / 180.0;
 
 		temp = val[5]; // W
 
@@ -1160,8 +1272,8 @@ void decode_span_dirctory(const char* dirname, const char* fExt, int format, int
 int main(int argc, char *argv[])
 {
 	/*char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
-	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";
-	decode_span("C:\\Users\\Administrator\\Documents\\0502\\novatel_CPT7-2020_02_19_16_30_29.ASC", SPAN_CPT7, 100.0, 0);*/
+	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";*/
+	decode_span("E:/data/34/4/ub482/unicore_ub482-2021_02_03_14_21_20.bin", UB482, 10.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
@@ -1173,7 +1285,7 @@ int main(int argc, char *argv[])
 	//diff_with_span_rtk(fname1, fname2);
 
 	//span_csv_to_kml("E:\\data\\INS_ODO\\Process\\0827\\test1\\ref\\240.csv");
-	char fpath[256] = { 0 };
+	/*char fpath[256] = { 0 };
 
 	if (argc < 2) {
 		printf("Please input file path:\n");
@@ -1182,7 +1294,7 @@ int main(int argc, char *argv[])
 	} 
 	else {
 		span_csv_to_kml(argv[1]);
-	}
+	}*/
 
 
 	//decode_span_dirctory("C:\\LC79D\\CES_2020\\", "asc", SPAN_FLEX6, 100.0, 1);
