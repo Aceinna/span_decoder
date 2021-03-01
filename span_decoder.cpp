@@ -445,7 +445,7 @@ void decode_span(const char* fname, int sensor, double sampleRate, int isKMZ)
 			float ve = vh * sin(heading);
 			if (fpos != NULL && ws == ws_pv) { // NEED RE-CHECK
 
-				fprintf(fpos, "%.3f,%.3f,%.3f,%.3f\n", ve, vn, vu, hdg_deg);
+				fprintf(fpos, "%.3f,%.3f,%.3f,%.3f\n", vn, ve, vu, hdg_deg);
 			}
 			continue;
 		}
@@ -1273,7 +1273,7 @@ int main(int argc, char *argv[])
 {
 	/*char fname1[] = "ins2000-2019_12_20_14_38_41.ASC";
 	char fname2[] = "novatel_FLX6-2019_12_20_14_38_39.ASC";*/
-	decode_span("E:/data/34/4/ub482/unicore_ub482-2021_02_03_14_21_20.bin", UB482, 10.0, 0);
+	decode_span("E:/data/DPAN/Process/2021/060/dev_ub482/user_2021_03_01_15_15_04.bin", UB482, 10.0, 0);
 
 	//diff_test("C:\\aceinna\\span_decoder\\2019-11-08-15-53-17.log", "C:\\aceinna\\span_decoder\\novatel_CPT7-2019_11_08_15_48_34-pos.csv");
 	//decode_span("C:\\Users\\da\\Documents\\290\\span\\halfmoon\\novatel_FLX6-2019_10_16_20_32_44.ASC");
