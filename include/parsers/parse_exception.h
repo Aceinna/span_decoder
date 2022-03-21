@@ -30,7 +30,8 @@
 #ifndef NOVATEL_GPS_DRIVER_PARSE_EXCEPTION_H
 #define NOVATEL_GPS_DRIVER_PARSE_EXCEPTION_H
 
-#include <exception>
+//#include <exception>
+#include <stdexcept>
 
 namespace novatel_gps_driver
 {
